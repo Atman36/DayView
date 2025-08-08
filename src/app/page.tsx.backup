@@ -1,0 +1,322 @@
+"use client";
+
+import type { ChangeEvent } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ClockDiagram } from '@/components/clock-diagram';
+import { TaskChecklist } from '@/components/task-checklist';
+import { SettingsDialog } from '@/components/settings-dialog';
+import type { Task, Category } from '@/types';
+import { parseMarkdown, generateMarkdown } from '@/utils/markdown';
+import { Button } from '@/components/ui/button';
+import { Settings, Upload, Download } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Toaster } from '@/components/ui/toaster';
+import { useToast } from '@/hooks/use-toast';
+
+const DEFAULT_MARKDOWN = `# Расписание дня
+
+## Категории
+- Духовное развитие (#F6A24C)
+- Основные задачи (#3E847C)
+- Отдых / Питание (#D8D4C9)
+- Планирование (#EB7957)
+- Обучение (#92B4A6)
+- Сон (#3D505E)
+- Физическая активность (#3B5D37)
+- Чтение (#3E847C)
+
+## Задачи
+### 06:00-06:30 Утренняя рутина
+- Категория: Духовное развитие
+- Статус: ⏳ В процессе
+
+### 06:30-08:00 Утренние практики
+- Категория: Духовное развитие
+- Статус: ⏳ В процессе
+
+### 08:00-09:00 Завтрак, Чтение
+- Категория: Отдых / Питание
+- Статус: ⏳ В процессе
+
+### 09:00-12:00 Работа - Блок 1
+- Категория: Основные задачи
+- Статус: ⏳ В процессе
+
+### 12:00-13:00 Обед и отдых
+- Категория: Отдых / Питание
+- Статус: ⏳ В процессе
+
+### 13:00-15:00 Работа - Блок 2
+- Категория: Основные задачи
+- Статус: ⏳ В процессе
+
+### 15:00-16:00 Обучение
+- Категория: Обучение
+- Статус: ⏳ В процессе
+
+### 16:00-17:00 Физическая активность
+- Категория: Физическая активность
+- Статус: ⏳ В процессе
+
+### 17:00-18:00 Планирование на завтра
+- Категория: Планирование
+- Статус: ⏳ В процессе
+
+### 18:00-19:00 Ужин
+- Категория: Отдых / Питание
+- Статус: ⏳ В процессе
+
+### 19:00-21:00 Свободное время / Чтение
+- Категория: Чтение
+- Статус: ⏳ В процессе
+
+### 21:00-22:00 Вечерняя рутина
+- Категория: Духовное развитие
+- Статус: ⏳ В процессе
+
+### 22:00-06:00 Сон
+- Категория: Сон
+- Статус: ✅ Завершено
+`;
+
+const DEFAULT_TIMEZONE = 'Asia/Yekaterinburg';
+
+export default function Home() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [markdownContent, setMarkdownContent] = useState<string>(DEFAULT_MARKDOWN);
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [timezone, setTimezone] = useState<string>(DEFAULT_TIMEZONE);
+  const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    const savedMarkdown = localStorage.getItem('scheduleMarkdown');
+    const initialMarkdown = savedMarkdown || DEFAULT_MARKDOWN;
+    setMarkdownContent(initialMarkdown);
+
+    const savedTimezone = localStorage.getItem('scheduleTimezone');
+    setTimezone(savedTimezone || DEFAULT_TIMEZONE);
+
+    try {
+      const { tasks: parsedTasks, categories: parsedCategories } = parseMarkdown(initialMarkdown);
+      setTasks(parsedTasks);
+      setCategories(parsedCategories);
+    } catch (error) {
+      console.error("Error parsing initial markdown:", error);
+      toast({
+        title: "Ошибка парсинга Markdown",
+        description: "Не удалось загрузить расписание. Проверьте формат.",
+        variant: "destructive",
+      });
+      const { tasks: defaultTasks, categories: defaultCategories } = parseMarkdown(DEFAULT_MARKDOWN);
+      setTasks(defaultTasks);
+      setCategories(defaultCategories);
+      setMarkdownContent(DEFAULT_MARKDOWN);
+      localStorage.setItem('scheduleMarkdown', DEFAULT_MARKDOWN);
+    }
+  }, [toast]);
+
+  const updateDataFromMarkdown = useCallback((newMarkdown: string) => {
+    try {
+      const { tasks: parsedTasks, categories: parsedCategories } = parseMarkdown(newMarkdown);
+      setTasks(parsedTasks);
+      setCategories(parsedCategories);
+      setMarkdownContent(newMarkdown);
+      localStorage.setItem('scheduleMarkdown', newMarkdown);
+      toast({
+        title: "Успешно",
+        description: "Расписание обновлено.",
+      });
+    } catch (error) {
+      console.error("Error parsing markdown:", error);
+      toast({
+        title: "Ошибка парсинга Markdown",
+        description: "Не удалось обновить расписание. Проверьте формат.",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  const handleTaskUpdate = (updatedTask: Task) => {
+    const updatedTasks = tasks.map(task => task.id === updatedTask.id ? updatedTask : task);
+    setTasks(updatedTasks);
+    const newMarkdown = generateMarkdown(updatedTasks, categories);
+    updateDataFromMarkdown(newMarkdown);
+  };
+
+  const handleTaskAdd = (newTask: Omit<Task, 'id'>) => {
+    const newId = Date.now().toString();
+    const taskWithId: Task = { ...newTask, id: newId };
+    const updatedTasks = [...tasks, taskWithId];
+    updatedTasks.sort((a, b) => {
+      const timeA = parseInt(a.startTime.replace(':', ''), 10);
+      const timeB = parseInt(b.startTime.replace(':', ''), 10);
+      return timeA - timeB;
+    });
+    setTasks(updatedTasks);
+    const newMarkdown = generateMarkdown(updatedTasks, categories);
+    updateDataFromMarkdown(newMarkdown);
+  };
+
+  const handleTaskDelete = (taskId: string) => {
+    const updatedTasks = tasks.filter(task => task.id !== taskId);
+    setTasks(updatedTasks);
+    const newMarkdown = generateMarkdown(updatedTasks, categories);
+    updateDataFromMarkdown(newMarkdown);
+  };
+
+  const handleImport = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        if (content) {
+          updateDataFromMarkdown(content);
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+  };
+
+  const handleExport = () => {
+    const blob = new Blob([markdownContent], { type: 'text/markdown;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'schedule.md';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({
+      title: "Успешно",
+      description: "Расписание экспортировано в schedule.md.",
+    });
+  };
+
+  const handleCategoriesUpdate = (updatedCategories: Category[]) => {
+    setCategories(updatedCategories);
+    const newMarkdown = generateMarkdown(tasks, updatedCategories);
+    updateDataFromMarkdown(newMarkdown);
+  };
+
+  const handleTimezoneChange = (newTimezone: string) => {
+    setTimezone(newTimezone);
+    localStorage.setItem('scheduleTimezone', newTimezone);
+    toast({
+      title: "Успешно",
+      description: `Часовой пояс обновлен на ${newTimezone}.`,
+    });
+  };
+
+  const dayTasks = tasks.filter(task => {
+    const startHour = parseInt(task.startTime.split(':')[0]);
+    const endHour = parseInt(task.endTime.split(':')[0]);
+    const endMinute = parseInt(task.endTime.split(':')[1]);
+    if (startHour >= 6 && startHour < 18) return true;
+    if (startHour < 6 && (endHour > 6 || (endHour === 6 && endMinute > 0))) return true;
+    if (startHour < 18 && (endHour >= 18 || endHour < startHour)) return true;
+    return false;
+  });
+
+  const nightTasks = tasks.filter(task => {
+    const startHour = parseInt(task.startTime.split(':')[0]);
+    const endHour = parseInt(task.endTime.split(':')[0]);
+    const endMinute = parseInt(task.endTime.split(':')[1]);
+    
+    if (startHour === 17 && endHour === 18 && endMinute === 0) return false;
+    
+    if (startHour >= 18 || startHour < 6) return true;
+    if (startHour < 18 && (endHour >= 18 || endHour < 6)) return true;
+    if (startHour < 6 && (endHour > 6 || (endHour === 6 && endMinute > 0))) return true;
+    return false;
+  });
+
+  if (!isClient) {
+    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-8 flex flex-col">
+      <header className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold text-primary">DayView</h1>
+        <div className="flex gap-2">
+          <Button variant="outline" size="icon" onClick={() => document.getElementById('import-input')?.click()} title="Import Markdown">
+            <Upload className="h-4 w-4" />
+            <span className="sr-only">Import</span>
+          </Button>
+          <input id="import-input" type="file" accept=".md" onChange={handleImport} className="hidden" />
+          <Button variant="outline" size="icon" onClick={handleExport} title="Export Markdown">
+            <Download className="h-4 w-4" />
+            <span className="sr-only">Export</span>
+          </Button>
+          <Button variant="outline" size="icon" onClick={() => setIsSettingsOpen(true)} title="Settings">
+            <Settings className="h-4 w-4" />
+            <span className="sr-only">Settings</span>
+          </Button>
+        </div>
+      </header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 mb-8">
+        <Card className="aspect-square">
+          <CardContent className="p-4 md:p-6 h-full flex justify-center items-center">
+            <ClockDiagram
+              startTime="06:00"
+              endTime="18:00"
+              tasks={dayTasks}
+              categories={categories}
+              timezone={timezone}
+              onAddTask={(time) => handleTaskAdd({ name: 'Новая задача', startTime: time, endTime: time, categoryName: categories[0]?.name || '', status: '⏳ В процессе' })}
+              onEditTask={handleTaskUpdate}
+              onDeleteTask={handleTaskDelete}
+            />
+          </CardContent>
+        </Card>
+        <Card className="aspect-square">
+          <CardContent className="p-4 md:p-6 h-full flex justify-center items-center">
+            <ClockDiagram
+              startTime="18:00"
+              endTime="06:00"
+              tasks={nightTasks}
+              categories={categories}
+              timezone={timezone}
+              onAddTask={(time) => handleTaskAdd({ name: 'Новая задача', startTime: time, endTime: time, categoryName: categories[0]?.name || '', status: '⏳ В процессе' })}
+              onEditTask={handleTaskUpdate}
+              onDeleteTask={handleTaskDelete}
+            />
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="flex-shrink-0">
+        <CardContent className="p-4 md:p-6">
+          <h2 className="text-xl font-semibold mb-4">Список задач</h2>
+          <ScrollArea className="h-[40vh] min-h-[350px] md:min-h-[450px]">
+            <TaskChecklist
+              tasks={tasks}
+              categories={categories}
+              onUpdateTask={handleTaskUpdate}
+              onDeleteTask={handleTaskDelete}
+              onAddTask={handleTaskAdd}
+            />
+          </ScrollArea>
+        </CardContent>
+      </Card>
+
+      <SettingsDialog
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        markdownContent={markdownContent}
+        onMarkdownChange={updateDataFromMarkdown}
+        categories={categories}
+        onCategoriesChange={handleCategoriesUpdate}
+        timezone={timezone}
+        onTimezoneChange={handleTimezoneChange}
+      />
+      <Toaster />
+    </div>
+  );
+}
