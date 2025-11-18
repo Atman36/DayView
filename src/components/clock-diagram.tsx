@@ -397,6 +397,10 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
     const startMinutes = convertTimeToMinutes(task.startTime);
     const endMinutes = convertTimeToMinutes(task.endTime);
 
+    // Check if time actually changed (avoid unnecessary updates)
+    const currentTime = dragState.edge === 'start' ? task.startTime : task.endTime;
+    if (currentTime === newTime) return;
+
     let updatedTask: Task | null = null;
 
     if (dragState.edge === 'start') {
@@ -611,10 +615,39 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
           </filter>
         </defs>
         <circle cx={center} cy={center} r={radius} fill="none" stroke="hsl(var(--border))" strokeWidth="0.5" />
+
+        {/* Render segments */}
+        {segments.map((segment) => (
+          <g key={segment.id} data-segment-id={segment.id}>
+            {/* Main segment path */}
+            <path
+              d={segment.path}
+              fill={segment.color}
+              stroke="hsl(var(--background))"
+              strokeWidth="0.5"
+              className="transition-opacity duration-200 cursor-pointer"
+              style={{
+                opacity: segment.id === hoveredSegment ? 0.8 : 1,
+                pointerEvents: isDragging ? 'none' : 'auto'
+              }}
+              onClick={(e) => segment.originalTask && handleSegmentClick(e, segment.originalTask)}
+              onMouseEnter={() => !isDragging && setHoveredSegment(segment.id)}
+              onMouseLeave={() => setHoveredSegment(null)}
+            >
+              <title>{segment.name} — {segment.startTime}–{segment.endTime}</title>
+            </path>
+
+            {/* Segment text */}
+            {renderSegmentText(segment)}
+          </g>
+        ))}
+
+        {/* Render handles AFTER all segments for proper z-index */}
         {segments.map((segment) => {
-          // Calculate handle positions
+          if (!segment.originalTask) return null;
+
           const handleRadius = 6;
-          const handleOffset = radius * 0.85; // Position handles towards outer edge
+          const handleOffset = radius * 0.85;
 
           const startX = center + handleOffset * Math.cos(((segment.startAngle - 90) * Math.PI) / 180);
           const startY = center + handleOffset * Math.sin(((segment.startAngle - 90) * Math.PI) / 180);
@@ -626,70 +659,50 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
           const isDraggingThis = dragState?.taskId === segment.id;
 
           return (
-            <g key={segment.id} data-segment-id={segment.id}>
-              {/* Main segment path */}
-              <path
-                d={segment.path}
-                fill={segment.color}
-                stroke="hsl(var(--background))"
-                strokeWidth="0.5"
-                className="transition-opacity duration-200 cursor-pointer"
-                style={{ opacity: segment.id === hoveredSegment ? 0.8 : 1 }}
-                onClick={(e) => segment.originalTask && handleSegmentClick(e, segment.originalTask)}
-                onMouseEnter={() => setHoveredSegment(segment.id)}
-                onMouseLeave={() => setHoveredSegment(null)}
-              >
-                <title>{segment.name} — {segment.startTime}–{segment.endTime}</title>
-              </path>
-
-              {/* Segment text */}
-              {renderSegmentText(segment)}
-
+            <g key={`handles-${segment.id}`}>
               {/* Start handle */}
-              {segment.originalTask && (
-                <circle
-                  cx={startX}
-                  cy={startY}
-                  r={handleRadius}
-                  fill={isHoveringStart || isDraggingThis ? 'hsl(var(--primary))' : 'white'}
-                  stroke={segment.color}
-                  strokeWidth={2}
-                  className="cursor-grab active:cursor-grabbing transition-all duration-150"
-                  style={{
-                    opacity: isHoveringStart || isDraggingThis || hoveredSegment === segment.id ? 1 : 0,
-                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
-                  }}
-                  onMouseDown={(e) => handleEdgeMouseDown(e, segment.originalTask, 'start')}
-                  onMouseEnter={() => setHoveredEdge({ taskId: segment.id, edge: 'start' })}
-                  onMouseLeave={() => setHoveredEdge(null)}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <title>Drag to adjust start time</title>
-                </circle>
-              )}
+              <circle
+                cx={startX}
+                cy={startY}
+                r={handleRadius}
+                fill={isHoveringStart || (isDraggingThis && dragState?.edge === 'start') ? 'hsl(var(--primary))' : 'white'}
+                stroke={segment.color}
+                strokeWidth={2}
+                className="cursor-grab active:cursor-grabbing transition-all duration-150"
+                style={{
+                  opacity: isHoveringStart || isDraggingThis || hoveredSegment === segment.id ? 1 : 0,
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
+                  pointerEvents: isDragging && !isDraggingThis ? 'none' : 'auto'
+                }}
+                onMouseDown={(e) => handleEdgeMouseDown(e, segment.originalTask, 'start')}
+                onMouseEnter={() => !isDragging && setHoveredEdge({ taskId: segment.id, edge: 'start' })}
+                onMouseLeave={() => setHoveredEdge(null)}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <title>Drag to adjust start time</title>
+              </circle>
 
               {/* End handle */}
-              {segment.originalTask && (
-                <circle
-                  cx={endX}
-                  cy={endY}
-                  r={handleRadius}
-                  fill={isHoveringEnd || isDraggingThis ? 'hsl(var(--primary))' : 'white'}
-                  stroke={segment.color}
-                  strokeWidth={2}
-                  className="cursor-grab active:cursor-grabbing transition-all duration-150"
-                  style={{
-                    opacity: isHoveringEnd || isDraggingThis || hoveredSegment === segment.id ? 1 : 0,
-                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
-                  }}
-                  onMouseDown={(e) => handleEdgeMouseDown(e, segment.originalTask, 'end')}
-                  onMouseEnter={() => setHoveredEdge({ taskId: segment.id, edge: 'end' })}
-                  onMouseLeave={() => setHoveredEdge(null)}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <title>Drag to adjust end time</title>
-                </circle>
-              )}
+              <circle
+                cx={endX}
+                cy={endY}
+                r={handleRadius}
+                fill={isHoveringEnd || (isDraggingThis && dragState?.edge === 'end') ? 'hsl(var(--primary))' : 'white'}
+                stroke={segment.color}
+                strokeWidth={2}
+                className="cursor-grab active:cursor-grabbing transition-all duration-150"
+                style={{
+                  opacity: isHoveringEnd || isDraggingThis || hoveredSegment === segment.id ? 1 : 0,
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
+                  pointerEvents: isDragging && !isDraggingThis ? 'none' : 'auto'
+                }}
+                onMouseDown={(e) => handleEdgeMouseDown(e, segment.originalTask, 'end')}
+                onMouseEnter={() => !isDragging && setHoveredEdge({ taskId: segment.id, edge: 'end' })}
+                onMouseLeave={() => setHoveredEdge(null)}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <title>Drag to adjust end time</title>
+              </circle>
             </g>
           );
         })}
