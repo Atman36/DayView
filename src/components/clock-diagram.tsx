@@ -131,6 +131,8 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
     return Math.round(minutes / interval) * interval;
   };
 
+  const startMinuteAbs = useMemo(() => convertTimeToMinutes(startTime), [startTime]);
+
   // Convert angle (0-360) to minutes within the 12-hour clock
   const angleToMinutes = useCallback((angle: number): number => {
     // Angle 0° = 12:00, rotating clockwise
@@ -162,8 +164,6 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
     if (angle < 0) angle += 360;
     return angle;
   }, [center]);
-
-  const startMinuteAbs = useMemo(() => convertTimeToMinutes(startTime), [startTime]);
 
   const calculateAngle = useCallback((time: string): number => {
     return timeToAngle12(time); 
