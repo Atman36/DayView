@@ -225,6 +225,22 @@ interface Category {
 - **Storage**: Persisted in localStorage
 - **Coverage**: All UI strings, default markdown content
 
+### Constants and Configuration
+
+#### Time Constants (`src/components/clock-diagram.tsx`)
+- `MINUTES_PER_DAY = 1440` - Total minutes in 24 hours
+- `MINUTES_PER_12_HOURS = 720` - Minutes in 12-hour clock
+- `DEFAULT_TASK_DURATION_MINUTES = 120` - Default 2-hour task duration
+- `CURRENT_TIME_UPDATE_INTERVAL_MS = 300000` - Update current time every 5 minutes
+- `TIME_SNAP_INTERVAL_MINUTES = 5` - Snap drag & drop to 5-minute intervals
+- `MIN_TASK_DURATION_MINUTES = 5` - Minimum allowed task duration
+
+#### Task Name Shortening (`src/constants/task-name-shortening.ts`)
+- Dictionary for abbreviating task names on clock display
+- Maps full task names to shortened versions for space-constrained segments
+- Example: "планирование дня" → "планирование"
+- Customizable per user's naming patterns
+
 ### Important File Locations
 
 #### Core Application Files
