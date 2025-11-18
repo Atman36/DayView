@@ -53,6 +53,7 @@ DayView is a Next.js TypeScript application that visualizes daily schedules as d
 4. **Type-First Development**: Strict TypeScript with explicit type definitions
 5. **Controlled Components**: Form inputs managed through react-hook-form
 6. **Internationalization**: Translation context with English/Russian support
+7. **Interactive Drag & Drop**: Mouse event handling for time adjustment with visual feedback
 
 ### Core Components Structure
 
@@ -66,6 +67,13 @@ DayView is a Next.js TypeScript application that visualizes daily schedules as d
   - Click handlers for task editing
   - Hover effects with tooltips
   - Support for tasks crossing midnight boundary
+  - **Drag & Drop Time Adjustment**: Interactive handles on segment edges to resize tasks
+    - Handles appear on hover at start/end of each segment
+    - Drag handles to adjust task start/end times
+    - Automatically snaps to 5-minute intervals
+    - Enforces minimum 5-minute task duration
+    - Visual feedback with cursor changes (grab/grabbing)
+    - Smooth transitions and hover states
 
 #### Task Management
 - **Task Dialog** (`src/components/task-dialog.tsx`): Modal for creating/editing tasks with form validation
@@ -75,6 +83,11 @@ DayView is a Next.js TypeScript application that visualizes daily schedules as d
 #### Settings System
 - **Location**: `src/components/settings-dialog.tsx`
 - **Features**: Category management, timezone selection, theme toggle, language selector, markdown editor
+- **Recent Improvements**:
+  - Responsive flexbox layout for timezone/language/theme controls
+  - Improved spacing and padding consistency
+  - Enhanced category items with hover effects and visual polish
+  - Mobile-friendly adaptive layout (sm:flex-row)
 
 #### Modal Architecture
 - Uses Radix UI Dialog primitives
@@ -141,6 +154,11 @@ interface Category {
 - **Special Cases**:
   - Handles midnight crossing (e.g., 22:00-02:00)
   - Prevents duplicate rendering of boundary tasks (17:00-18:00 shown only on day clock)
+- **Interactive Handles**: SVG circles at segment edges for drag & drop
+  - Position: 85% of radius from center
+  - Size: 6px radius
+  - Visibility: Appear on hover with smooth opacity transition
+  - Visual states: Default (white), hover/drag (primary color)
 
 #### Timezone Support
 - **Library**: date-fns-tz

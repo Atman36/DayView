@@ -6,6 +6,12 @@ DayView is a modern web application for visualizing and managing your daily sche
 
 - **Dual Clock Diagrams**: Visualize your day as two 12-hour circular diagrams (day and night), each showing colored segments for tasks.
 - **Interactive Tasks**: Clickable segments, hover effects, and tooltips for quick task details and editing directly on the diagram.
+- **Drag & Drop Time Adjustment** ⭐: Resize tasks by dragging handles at segment edges
+  - Interactive handles appear on hover at start/end of each task
+  - Drag to adjust task duration directly on the clock
+  - Automatically snaps to 5-minute intervals
+  - Enforces minimum 5-minute task duration
+  - Visual feedback with cursor changes (grab/grabbing)
 - **Task Checklist**: Chronological list of all tasks with quick status toggling, editing, and deletion.
 - **Task Dialog**: Modal for creating and editing tasks with validation.
 - **Settings Dialog**: Manage categories, select timezone, theme (light/dark/system), and language (EN/RU).
@@ -38,9 +44,10 @@ DayView is a modern web application for visualizing and managing your daily sche
 ## UI/UX Highlights
 
 - **Minimalist, modern look**: Clean fonts, dynamic text color for contrast, subtle animations.
-- **Interactivity**: Hover effects, tooltips, and smooth segment scaling on hover.
+- **Interactivity**: Hover effects, tooltips, smooth segment scaling, and drag & drop time adjustment.
 - **Accessibility**: High-contrast colors, keyboard navigation, and responsive layout.
 - **Mobile-friendly**: Diagrams and text scale for small screens.
+- **Visual Feedback**: Interactive handles, cursor changes, and smooth transitions during drag operations.
 
 ## Project Structure
 
