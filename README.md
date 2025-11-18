@@ -41,6 +41,9 @@ DayView is a modern web application for visualizing and managing your daily sche
 - **Interactivity**: Hover effects, tooltips, and smooth segment scaling on hover.
 - **Accessibility**: High-contrast colors, keyboard navigation, and responsive layout.
 - **Mobile-friendly**: Diagrams and text scale for small screens.
+- **Responsive Controls**: Settings dialog adapts from vertical layout (mobile) to horizontal layout (desktop)
+- **Polish & Consistency**: Enhanced spacing (`space-y-6`, `gap-3`), hover effects with smooth transitions, and improved visual hierarchy
+- **Category Management**: Interactive category items with hover backgrounds and smooth color transitions
 
 ## Project Structure
 
@@ -51,11 +54,13 @@ src/
 │   └── page.tsx           # Main page component
 ├── components/            # React components
 │   ├── ui/               # Shadcn UI components
-│   ├── clock-diagram.tsx # Main clock diagram component
-│   ├── settings-dialog.tsx # Settings modal with theme/language controls
+│   ├── clock-diagram.tsx # Main clock diagram component with time constants
+│   ├── settings-dialog.tsx # Settings modal with responsive UI improvements
 │   ├── task-dialog.tsx   # Task creation/editing modal
 │   ├── task-checklist.tsx # Task list component
 │   └── translation-provider.tsx # i18n context provider
+├── constants/            # Application constants
+│   └── task-name-shortening.ts # Task name abbreviations for SVG display
 ├── hooks/                 # Custom React hooks
 │   ├── use-translation.ts # Translation and language management
 │   ├── use-schedule-data.ts # Data management
@@ -96,7 +101,7 @@ npm run dev
 yarn dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
+Open [http://localhost:9002](http://localhost:9002) in your browser to see the application.
 
 ### Build for Production
 
@@ -110,11 +115,27 @@ yarn start
 
 ### Available Scripts
 
-- `npm run dev` - Start development server on port 3000
+- `npm run dev` - Start development server on port 9002
 - `npm run build` - Create production build
 - `npm run start` - Start production server
 - `npm run lint` - Run Next.js linting
 - `npm run typecheck` - Run TypeScript type checking
+- `npm run genkit:dev` - Start Genkit AI development server
+- `npm run genkit:watch` - Start Genkit AI with watch mode
+
+## Core Implementation Details
+
+### Time Constants
+The application uses predefined time constants for accurate clock rendering and task management:
+- **MINUTES_PER_DAY** (1440) - Total minutes in 24 hours
+- **MINUTES_PER_12_HOURS** (720) - Minutes in one 12-hour clock
+- **DEFAULT_TASK_DURATION_MINUTES** (120) - Default 2-hour task duration
+- **CURRENT_TIME_UPDATE_INTERVAL_MS** (300000) - Updates current time indicator every 5 minutes
+
+See [CLAUDE.md](./CLAUDE.md) for detailed technical information about these constants.
+
+### Task Name Shortening
+Long task names are automatically abbreviated to fit within circular clock segments. The system uses a bilingual dictionary of abbreviations (Russian and English) stored in `src/constants/task-name-shortening.ts`. Custom abbreviations can be added to accommodate new task types.
 
 ## Data Import/Export
 

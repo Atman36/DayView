@@ -75,6 +75,19 @@ DayView is a Next.js TypeScript application that visualizes daily schedules as d
 #### Settings System
 - **Location**: `src/components/settings-dialog.tsx`
 - **Features**: Category management, timezone selection, theme toggle, language selector, markdown editor
+- **UI Improvements**:
+  - **Responsive Flexbox Layout**: Controls adapt from vertical (mobile) to horizontal (desktop) layout using `sm:flex-row` breakpoint
+  - **Spacing & Padding Consistency**:
+    - Major sections: `space-y-6`
+    - Subsections: `space-y-3`
+    - Control groups: `gap-3` and `gap-2`
+  - **Enhanced Category Items**:
+    - Hover effects with `hover:bg-accent/50` background transition
+    - Smooth `transition-colors` for visual polish
+    - Consistent `p-2` padding and `rounded-lg` borders
+    - Flex layout with proper alignment (`items-center gap-2`)
+  - **Mobile-Friendly Buttons**: Flexible sizing using `flex-1` on mobile, `sm:flex-initial` on desktop
+  - **Accessibility**: Removed auto-closing footer button, improved focus states through Tailwind classes
 
 #### Modal Architecture
 - Uses Radix UI Dialog primitives
@@ -170,6 +183,29 @@ interface Category {
   ```
 - **Bi-lingual Support**: Accepts both English and Russian section headers
 - **Error Handling**: Falls back to default schedule if parsing fails
+
+#### Time Constants
+- **File**: `src/components/clock-diagram.tsx`
+- **Purpose**: Core timing parameters for clock rendering and task display
+- **Constants**:
+  - `MINUTES_PER_DAY = 1440` - Total minutes in 24 hours
+  - `MINUTES_PER_12_HOURS = 720` - Minutes in 12-hour clock (one full clock revolution)
+  - `DEFAULT_TASK_DURATION_MINUTES = 120` - Default 2-hour duration when creating new tasks
+  - `CURRENT_TIME_UPDATE_INTERVAL_MS = 300000` - Update interval for current time indicator (5 minutes)
+- **Usage**: These constants are used for angle calculations, time conversions, and UI updates
+- **Note**: Modifying these values affects clock rendering accuracy and task duration defaults
+
+#### Task Name Shortening System
+- **File**: `src/constants/task-name-shortening.ts`
+- **Purpose**: Abbreviate long task names to fit within SVG clock segments
+- **Implementation**: Bilingual dictionary mapping full task names to shortened versions
+- **Type**: `Record<string, string>` with 25+ predefined abbreviations
+- **Examples**:
+  - English: "Learning" → "Learn", "Programming" → "Code"
+  - Russian: "программирование" → "код", "изучение английского" → "англ"
+- **Usage**: Applied in `clock-diagram.tsx` when rendering task text in constrained SVG space
+- **Scope**: Currently focused on Russian task names but extensible for other languages
+- **Customization**: Add new mappings directly to the constant object as new task types are created
 
 ### Feature Architecture
 
