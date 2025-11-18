@@ -3,12 +3,19 @@ import type { FC } from 'react';
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import type { Task, Category } from '@/types';
 import { timeToAngle, getSegmentPath, isDarkColor, timeToAngle12 } from '@/utils/color';
-import { TaskDialog } from './task-dialog'; 
-import { format } from 'date-fns-tz'; 
+import { TaskDialog } from './task-dialog';
+import { format } from 'date-fns-tz';
+import { TASK_NAME_SHORTENING } from '@/constants/task-name-shortening';
+
+// Time constants
+const MINUTES_PER_DAY = 1440;
+const MINUTES_PER_12_HOURS = 720;
+const DEFAULT_TASK_DURATION_MINUTES = 120; // 2 hours
+const CURRENT_TIME_UPDATE_INTERVAL_MS = 300000; // 5 minutes
 
 interface ClockDiagramProps {
-  startTime: string; 
-  endTime: string; 
+  startTime: string;
+  endTime: string;
   tasks: Task[];
   categories: Category[];
   isDayClock?: boolean;
@@ -39,45 +46,36 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [addInitialValues, setAddInitialValues] = useState<Partial<Task> | null>(null);
   const [currentTimeAngle, setCurrentTimeAngle] = useState<number | null>(null);
-  const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
   useEffect(() => {
-    setIsClient(true); 
+    setIsClient(true);
 
     const updateCurrentTime = () => {
       const now = new Date();
       const timeString = format(now, 'HH:mm', { timeZone: timezone });
       const currentHour = parseInt(timeString.split(':')[0]);
-      
+
       let isOnThisClock = false;
       const startHour24 = parseInt(startTime.split(':')[0]);
       const endHour24 = parseInt(endTime.split(':')[0]);
 
-      if (startHour24 < endHour24) { 
+      if (startHour24 < endHour24) {
           isOnThisClock = currentHour >= startHour24 && currentHour < endHour24;
-      } else { 
+      } else {
           isOnThisClock = currentHour >= startHour24 || currentHour < endHour24;
       }
 
       if (isOnThisClock) {
-        setCurrentTimeAngle(timeToAngle12(timeString)); 
+        setCurrentTimeAngle(timeToAngle12(timeString));
       } else {
-        setCurrentTime(null); 
+        setCurrentTimeAngle(null);
       }
     };
 
-    updateCurrentTime(); 
-    const intervalId = setInterval(updateCurrentTime, 300000); 
-    return () => clearInterval(intervalId); 
-  }, [timezone, startTime, endTime, isClient]); 
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!isClient) return;
-      setCurrentTime(new Date());
-    }, 300000); 
-    return () => clearInterval(interval);
-  }, [isClient]);
+    updateCurrentTime();
+    const intervalId = setInterval(updateCurrentTime, CURRENT_TIME_UPDATE_INTERVAL_MS);
+    return () => clearInterval(intervalId);
+  }, [timezone, startTime, endTime, isClient]);
 
   const categoryMap = useMemo(() => {
     return categories.reduce((acc, category) => {
@@ -111,7 +109,7 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
   };
 
   const minutesToTime = (m: number): string => {
-    const mm = ((m % 1440) + 1440) % 1440;
+    const mm = ((m % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
     const h = Math.floor(mm / 60);
     const min = mm % 60;
     const pad = (n: number) => n.toString().padStart(2, '0');
@@ -344,31 +342,9 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
     const charactersPerLine = Math.max(1, Math.floor(maxTextWidth / averageCharWidth));
     
     if (segment.deltaAngle < 8 || maxTextWidth < fontSize * 2) return null; // минимальный угол слегка увеличен
-    
-    const nameShortening: Record<string, string> = {
-      "планирование дня": "планирование",
-      "планирование задач": "планирование",
-      "планирование дня, изучение английского": "планирование, англ",
-      "чтение, изучение английского": "чтение, англ",
-      "изучение английского": "англ",
-      "изучение испанского": "исп",
-      "ежедневное обучение": "обучение",
-      "прогулка, слушать подкасты": "прогулка, подкасты",
-      "слушать подкасты": "подкасты",
-      "чистка почты": "почта",
-      "работа над проектом": "проект",
-      "работа над задачами": "задачи",
-      "программирование, обучение": "код, обучение",
-      "программирование": "код",
-      "чтение новостей": "новости",
-      "завтрак чтение": "завтрак, чтение",
-      "завтрак": "завтрак, чтение",
-      "планирование на завтра": "планирование",
-      "физическая активность": "физическая активность"
-    };
-    
+
     const taskName = segment.name.toLowerCase();
-    const shortenedName = nameShortening[taskName] || taskName;
+    const shortenedName = TASK_NAME_SHORTENING[taskName] || taskName;
     
     const words = shortenedName.split(' ');
     
@@ -464,16 +440,16 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
   // Конвертация угла клика в абсолютные минуты (от полуокна startTime)
   const angleToAbsMinutes = (angle: number) => {
     // Минуты в пределах 12-часового круга, где 0° = 12:00
-    const minutesIn12 = Math.round((angle / 360) * 720) % 720;
+    const minutesIn12 = Math.round((angle / 360) * MINUTES_PER_12_HOURS) % MINUTES_PER_12_HOURS;
     const startAbs = startMinuteAbs;
     // База для ближайшего 12-часового цикла относительно начала окна
-    const base = Math.floor(startAbs / 720) * 720;
-    const cand1 = (base + minutesIn12) % 1440;
-    const cand2 = (base + 720 + minutesIn12) % 1440;
-    const off1 = (cand1 - startAbs + 1440) % 1440;
-    const off2 = (cand2 - startAbs + 1440) % 1440;
+    const base = Math.floor(startAbs / MINUTES_PER_12_HOURS) * MINUTES_PER_12_HOURS;
+    const cand1 = (base + minutesIn12) % MINUTES_PER_DAY;
+    const cand2 = (base + MINUTES_PER_12_HOURS + minutesIn12) % MINUTES_PER_DAY;
+    const off1 = (cand1 - startAbs + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+    const off2 = (cand2 - startAbs + MINUTES_PER_DAY) % MINUTES_PER_DAY;
     // Выбираем кандидат, попадающий в текущее 12-часовое окно
-    return off1 < 720 ? cand1 : cand2;
+    return off1 < MINUTES_PER_12_HOURS ? cand1 : cand2;
   };
 
   const handleBackgroundClick = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -488,14 +464,14 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
     if (angle < 0) angle += 360;
 
     const clickedAbsMinutes = angleToAbsMinutes(angle);
-    const clickedOffset = (clickedAbsMinutes - startMinuteAbs + 1440) % 1440; // 0..1439
+    const clickedOffset = (clickedAbsMinutes - startMinuteAbs + MINUTES_PER_DAY) % MINUTES_PER_DAY; // 0..1439
     // Найти конец предыдущей задачи внутри 12-часового окна
     const endOffsets = tasks.map(t => {
       const endM = convertTimeToMinutes(t.endTime);
-      const off = (endM - startMinuteAbs + 1440) % 1440;
+      const off = (endM - startMinuteAbs + MINUTES_PER_DAY) % MINUTES_PER_DAY;
       return { endAbs: endM, endOffset: off };
     });
-    const within = endOffsets.filter(o => o.endOffset < 720);
+    const within = endOffsets.filter(o => o.endOffset < MINUTES_PER_12_HOURS);
     let prev = within
       .filter(o => o.endOffset <= clickedOffset)
       .sort((a, b) => b.endOffset - a.endOffset)[0];
@@ -503,7 +479,7 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
       prev = within.sort((a, b) => b.endOffset - a.endOffset)[0];
     }
     const startAbs = prev ? prev.endAbs : startMinuteAbs;
-    const endAbs = (startAbs + 120) % 1440; // по умолчанию 2 часа
+    const endAbs = (startAbs + DEFAULT_TASK_DURATION_MINUTES) % MINUTES_PER_DAY;
 
     setAddInitialValues({ startTime: minutesToTime(startAbs), endTime: minutesToTime(endAbs) });
     setIsAddDialogOpen(true);

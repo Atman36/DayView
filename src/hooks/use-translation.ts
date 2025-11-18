@@ -63,7 +63,10 @@ interface Translation {
   pleaseCompleteFields: string;
   newCategory: string;
   notSpecified: string;
-  
+  fileExported: string;
+  exportError: string;
+  exportErrorDescription: string;
+
   // Default markdown content
   daySchedule: string;
   categories: string;
@@ -153,7 +156,10 @@ const translations: Record<Language, Translation> = {
     pleaseCompleteFields: 'Please complete all fields.',
     newCategory: 'New Category',
     notSpecified: 'Not Specified',
-    
+    fileExported: 'File exported.',
+    exportError: 'Export Error',
+    exportErrorDescription: 'Failed to export file.',
+
     // Default markdown content
     daySchedule: 'Daily Schedule',
     categories: 'Categories',
@@ -241,7 +247,10 @@ const translations: Record<Language, Translation> = {
     pleaseCompleteFields: 'Пожалуйста, заполните все поля.',
     newCategory: 'Новая категория',
     notSpecified: 'Не указано',
-    
+    fileExported: 'Файл экспортирован.',
+    exportError: 'Ошибка экспорта',
+    exportErrorDescription: 'Не удалось экспортировать файл.',
+
     // Default markdown content
     daySchedule: 'Расписание дня',
     categories: 'Категории',
