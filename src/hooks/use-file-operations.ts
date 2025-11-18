@@ -1,8 +1,10 @@
 import { useCallback, type ChangeEvent } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from '@/hooks/use-translation';
 
 export function useFileOperations() {
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   // Импорт файла
   const handleImport = useCallback((event: ChangeEvent<HTMLInputElement>, onDataUpdate: (content: string) => void) => {
@@ -33,20 +35,20 @@ export function useFileOperations() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      
+
       toast({
-        title: 'Успешно',
-        description: 'Файл экспортирован.',
+        title: t.success,
+        description: t.fileExported,
       });
     } catch (error) {
       console.error('Error exporting file:', error);
       toast({
-        title: 'Ошибка экспорта',
-        description: 'Не удалось экспортировать файл.',
+        title: t.exportError,
+        description: t.exportErrorDescription,
         variant: 'destructive',
       });
     }
-  }, [toast]);
+  }, [toast, t]);
 
   return {
     handleImport,
