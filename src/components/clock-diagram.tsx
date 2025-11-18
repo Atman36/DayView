@@ -12,6 +12,14 @@ const MINUTES_PER_DAY = 1440;
 const MINUTES_PER_12_HOURS = 720;
 const DEFAULT_TASK_DURATION_MINUTES = 120; // 2 hours
 const CURRENT_TIME_UPDATE_INTERVAL_MS = 300000; // 5 minutes
+const TIME_SNAP_INTERVAL_MINUTES = 5; // Snap to 5-minute intervals
+const MIN_TASK_DURATION_MINUTES = 5; // Minimum task duration
+
+interface DragState {
+  taskId: string;
+  edge: 'start' | 'end';
+  originalTask: Task;
+}
 
 interface ClockDiagramProps {
   startTime: string;
@@ -46,6 +54,8 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [addInitialValues, setAddInitialValues] = useState<Partial<Task> | null>(null);
   const [currentTimeAngle, setCurrentTimeAngle] = useState<number | null>(null);
+  const [dragState, setDragState] = useState<DragState | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -115,6 +125,43 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
     const pad = (n: number) => n.toString().padStart(2, '0');
     return `${pad(h)}:${pad(min)}`;
   };
+
+  // Snap time to nearest interval (e.g., 5 minutes)
+  const snapToInterval = (minutes: number, interval: number = TIME_SNAP_INTERVAL_MINUTES): number => {
+    return Math.round(minutes / interval) * interval;
+  };
+
+  // Convert angle (0-360) to minutes within the 12-hour clock
+  const angleToMinutes = useCallback((angle: number): number => {
+    // Angle 0° = 12:00, rotating clockwise
+    // Convert to minutes within 12-hour period (0-720)
+    const minutesIn12 = Math.round((angle / 360) * MINUTES_PER_12_HOURS) % MINUTES_PER_12_HOURS;
+
+    // Map to 24-hour day based on current clock (day/night)
+    const startAbs = startMinuteAbs;
+    const base = Math.floor(startAbs / MINUTES_PER_12_HOURS) * MINUTES_PER_12_HOURS;
+
+    const cand1 = (base + minutesIn12) % MINUTES_PER_DAY;
+    const cand2 = (base + MINUTES_PER_12_HOURS + minutesIn12) % MINUTES_PER_DAY;
+
+    const off1 = (cand1 - startAbs + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+    const off2 = (cand2 - startAbs + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+
+    return off1 < MINUTES_PER_12_HOURS ? cand1 : cand2;
+  }, [startMinuteAbs]);
+
+  // Get angle from mouse position on SVG
+  const getMouseAngle = useCallback((e: React.MouseEvent<SVGElement>): number => {
+    const svg = e.currentTarget;
+    const rect = svg.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 360;
+    const y = ((e.clientY - rect.top) / rect.height) * 370;
+    const dx = x - center;
+    const dy = y - center;
+    let angle = (Math.atan2(dy, dx) * 180) / Math.PI + 90;
+    if (angle < 0) angle += 360;
+    return angle;
+  }, [center]);
 
   const startMinuteAbs = useMemo(() => convertTimeToMinutes(startTime), [startTime]);
 
@@ -311,7 +358,69 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
     return markers;
   }, [isDayClock, center, radius, isClient, calculateAngle]);
 
+  // Drag & Drop handlers
+  const handleEdgeMouseDown = (e: React.MouseEvent, task: Task, edge: 'start' | 'end') => {
+    e.stopPropagation();
+    setDragState({ taskId: task.id, edge, originalTask: task });
+    setIsDragging(true);
+  };
+
+  useEffect(() => {
+    if (!isDragging || !dragState) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      // We need access to SVG element - will handle this in SVG event listeners
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      setDragState(null);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragState]);
+
+  const handleSVGMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
+    if (!isDragging || !dragState) return;
+
+    const angle = getMouseAngle(e);
+    const newMinutes = snapToInterval(angleToMinutes(angle));
+    const newTime = minutesToTime(newMinutes);
+
+    const task = dragState.originalTask;
+    const startMinutes = convertTimeToMinutes(task.startTime);
+    const endMinutes = convertTimeToMinutes(task.endTime);
+
+    let updatedTask: Task | null = null;
+
+    if (dragState.edge === 'start') {
+      // Check minimum duration
+      const duration = (endMinutes - newMinutes + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+      if (duration >= MIN_TASK_DURATION_MINUTES && duration <= MINUTES_PER_12_HOURS) {
+        updatedTask = { ...task, startTime: newTime };
+      }
+    } else {
+      // edge === 'end'
+      const duration = (newMinutes - startMinutes + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+      if (duration >= MIN_TASK_DURATION_MINUTES && duration <= MINUTES_PER_12_HOURS) {
+        updatedTask = { ...task, endTime: newTime };
+      }
+    }
+
+    if (updatedTask) {
+      onEditTask(updatedTask);
+      setDragState({ ...dragState, originalTask: updatedTask });
+    }
+  }, [isDragging, dragState, getMouseAngle, angleToMinutes, snapToInterval, minutesToTime, convertTimeToMinutes, onEditTask]);
+
   const handleSegmentClick = (e: React.MouseEvent, task: Task) => {
+    if (isDragging) return; // Don't open dialog during drag
     e.stopPropagation();
     setEditingTask(task);
     setIsTaskDialogOpen(true);
@@ -487,7 +596,7 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
 
   return (
     <div className="relative w-full h-full">
-      <svg viewBox="0 0 360 370" className="w-full h-full" style={{ padding: '20px' }} onClick={handleBackgroundClick}>
+      <svg viewBox="0 0 360 370" className="w-full h-full" style={{ padding: '20px', cursor: isDragging ? 'grabbing' : 'default' }} onClick={handleBackgroundClick} onMouseMove={handleSVGMouseMove}>
         <defs>
           <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
             <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
@@ -502,14 +611,88 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
           </filter>
         </defs>
         <circle cx={center} cy={center} r={radius} fill="none" stroke="hsl(var(--border))" strokeWidth="0.5" />
-        {segments.map((segment) => (
-          <g key={segment.id} data-segment-id={segment.id} onClick={(e) => segment.originalTask && handleSegmentClick(e, segment.originalTask)} onMouseEnter={() => setHoveredSegment(segment.id)} onMouseLeave={() => setHoveredSegment(null)} className="cursor-pointer group">
-            <path d={segment.path} fill={segment.color} stroke="hsl(var(--background))" strokeWidth="0.5" className="transition-opacity duration-200" style={{ opacity: segment.isHovered ? 0.7 : 1 }}>
-              <title>{segment.name} — {segment.startTime}–{segment.endTime}</title>
-            </path>
-            {renderSegmentText(segment)}
-          </g>
-        ))}
+        {segments.map((segment) => {
+          // Calculate handle positions
+          const handleRadius = 6;
+          const handleOffset = radius * 0.85; // Position handles towards outer edge
+
+          const startX = center + handleOffset * Math.cos(((segment.startAngle - 90) * Math.PI) / 180);
+          const startY = center + handleOffset * Math.sin(((segment.startAngle - 90) * Math.PI) / 180);
+          const endX = center + handleOffset * Math.cos(((segment.endAngle - 90) * Math.PI) / 180);
+          const endY = center + handleOffset * Math.sin(((segment.endAngle - 90) * Math.PI) / 180);
+
+          const isHoveringStart = hoveredEdge?.taskId === segment.id && hoveredEdge.edge === 'start';
+          const isHoveringEnd = hoveredEdge?.taskId === segment.id && hoveredEdge.edge === 'end';
+          const isDraggingThis = dragState?.taskId === segment.id;
+
+          return (
+            <g key={segment.id} data-segment-id={segment.id}>
+              {/* Main segment path */}
+              <path
+                d={segment.path}
+                fill={segment.color}
+                stroke="hsl(var(--background))"
+                strokeWidth="0.5"
+                className="transition-opacity duration-200 cursor-pointer"
+                style={{ opacity: segment.id === hoveredSegment ? 0.8 : 1 }}
+                onClick={(e) => segment.originalTask && handleSegmentClick(e, segment.originalTask)}
+                onMouseEnter={() => setHoveredSegment(segment.id)}
+                onMouseLeave={() => setHoveredSegment(null)}
+              >
+                <title>{segment.name} — {segment.startTime}–{segment.endTime}</title>
+              </path>
+
+              {/* Segment text */}
+              {renderSegmentText(segment)}
+
+              {/* Start handle */}
+              {segment.originalTask && (
+                <circle
+                  cx={startX}
+                  cy={startY}
+                  r={handleRadius}
+                  fill={isHoveringStart || isDraggingThis ? 'hsl(var(--primary))' : 'white'}
+                  stroke={segment.color}
+                  strokeWidth={2}
+                  className="cursor-grab active:cursor-grabbing transition-all duration-150"
+                  style={{
+                    opacity: isHoveringStart || isDraggingThis || hoveredSegment === segment.id ? 1 : 0,
+                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
+                  }}
+                  onMouseDown={(e) => handleEdgeMouseDown(e, segment.originalTask, 'start')}
+                  onMouseEnter={() => setHoveredEdge({ taskId: segment.id, edge: 'start' })}
+                  onMouseLeave={() => setHoveredEdge(null)}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <title>Drag to adjust start time</title>
+                </circle>
+              )}
+
+              {/* End handle */}
+              {segment.originalTask && (
+                <circle
+                  cx={endX}
+                  cy={endY}
+                  r={handleRadius}
+                  fill={isHoveringEnd || isDraggingThis ? 'hsl(var(--primary))' : 'white'}
+                  stroke={segment.color}
+                  strokeWidth={2}
+                  className="cursor-grab active:cursor-grabbing transition-all duration-150"
+                  style={{
+                    opacity: isHoveringEnd || isDraggingThis || hoveredSegment === segment.id ? 1 : 0,
+                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
+                  }}
+                  onMouseDown={(e) => handleEdgeMouseDown(e, segment.originalTask, 'end')}
+                  onMouseEnter={() => setHoveredEdge({ taskId: segment.id, edge: 'end' })}
+                  onMouseLeave={() => setHoveredEdge(null)}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <title>Drag to adjust end time</title>
+                </circle>
+              )}
+            </g>
+          );
+        })}
         {hourMarkers}
         {currentTimeAngle !== null && (
           <line

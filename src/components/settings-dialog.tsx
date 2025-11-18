@@ -145,15 +145,15 @@ export const SettingsDialog: FC<SettingsDialogProps> = ({
           <DialogTitle>{t.settingsTitle}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-grow overflow-y-auto pr-2 space-y-6 py-4">
+        <div className="flex-grow overflow-y-auto px-1 space-y-6 py-4">
              {/* Timezone, Theme, and Language Row */}
-            <div>
-                <Label htmlFor="timezone-select" className="text-lg font-semibold mb-2 block flex items-center gap-1">
+            <div className="space-y-3">
+                <Label htmlFor="timezone-select" className="text-lg font-semibold flex items-center gap-2">
                     <Globe className="h-5 w-5" /> {t.timezone}
                 </Label>
-                 <div className="grid grid-cols-6 gap-2 items-center">
-                  <Select value={selectedTimezone} onValueChange={handleTimezoneSelect} >
-                      <SelectTrigger id="timezone-select" className="w-full min-w-0 col-span-4">
+                 <div className="flex flex-col sm:flex-row gap-3">
+                  <Select value={selectedTimezone} onValueChange={handleTimezoneSelect}>
+                      <SelectTrigger id="timezone-select" className="w-full sm:flex-1">
                           <SelectValue placeholder={t.selectTimezone} />
                       </SelectTrigger>
                       <SelectContent>
@@ -164,62 +164,66 @@ export const SettingsDialog: FC<SettingsDialogProps> = ({
                           ))}
                       </SelectContent>
                   </Select>
-                  
-                  {/* Language Selector */}
-                  <Select value={language} onValueChange={handleLanguageChange}>
-                      <SelectTrigger className="w-full justify-center">
-                          <span className="text-sm font-medium">{language.toUpperCase()}</span>
-                      </SelectTrigger>
-                      <SelectContent>
-                          <SelectItem value="en">EN</SelectItem>
-                          <SelectItem value="ru">RU</SelectItem>
-                      </SelectContent>
-                  </Select>
-                  
-                  {/* Theme Toggle Icon */}
-                  <Select value={theme || 'system'} onValueChange={(value) => {
-                    if (value === 'system') {
-                      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                      onThemeChange?.(prefersDark ? 'dark' : 'light');
-                    } else {
-                      onThemeChange?.(value as 'light' | 'dark');
-                    }
-                  }}>
-                      <SelectTrigger className="w-full justify-center">
-                          {theme === 'dark' ? <Moon className="h-4 w-4" /> : 
-                           theme === 'light' ? <Sun className="h-4 w-4" /> :
-                           <div className="h-4 w-4 rounded-full bg-gradient-to-r from-orange-400 to-blue-600" />}
-                      </SelectTrigger>
-                      <SelectContent>
-                          <SelectItem value="light">
-                            <div className="flex items-center gap-2">
-                              <Sun className="h-4 w-4" /> Light
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="dark">
-                            <div className="flex items-center gap-2">
-                              <Moon className="h-4 w-4" /> Dark
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="system">
-                            <div className="flex items-center gap-2">
-                              <div className="h-4 w-4 rounded-full bg-gradient-to-r from-orange-400 to-blue-600" /> System
-                            </div>
-                          </SelectItem>
-                      </SelectContent>
-                  </Select>
+
+                  <div className="flex gap-3">
+                    {/* Language Selector */}
+                    <Select value={language} onValueChange={handleLanguageChange}>
+                        <SelectTrigger className="w-20 justify-center">
+                            <span className="text-sm font-medium">{language.toUpperCase()}</span>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="en">EN</SelectItem>
+                            <SelectItem value="ru">RU</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    {/* Theme Toggle Icon */}
+                    <Select value={theme || 'system'} onValueChange={(value) => {
+                      if (value === 'system') {
+                        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                        onThemeChange?.(prefersDark ? 'dark' : 'light');
+                      } else {
+                        onThemeChange?.(value as 'light' | 'dark');
+                      }
+                    }}>
+                        <SelectTrigger className="w-20 justify-center">
+                            {theme === 'dark' ? <Moon className="h-4 w-4" /> :
+                             theme === 'light' ? <Sun className="h-4 w-4" /> :
+                             <div className="h-4 w-4 rounded-full bg-gradient-to-r from-orange-400 to-blue-600" />}
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="light">
+                              <div className="flex items-center gap-2">
+                                <Sun className="h-4 w-4" /> Light
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="dark">
+                              <div className="flex items-center gap-2">
+                                <Moon className="h-4 w-4" /> Dark
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="system">
+                              <div className="flex items-center gap-2">
+                                <div className="h-4 w-4 rounded-full bg-gradient-to-r from-orange-400 to-blue-600" /> System
+                              </div>
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                  </div>
                 </div>
             </div>
 
            {/* Markdown Editor Section */}
-            <div>
-                <Label htmlFor="markdown-editor" className="text-lg font-semibold mb-2 block">{t.markdownEditor}</Label>
+            <div className="space-y-3">
+                <Label htmlFor="markdown-editor" className="text-lg font-semibold flex items-center gap-2">
+                  {t.markdownEditor}
+                </Label>
                 <Textarea
                     id="markdown-editor"
                     value={localMarkdown}
                     onChange={(e) => setLocalMarkdown(e.target.value)}
                     rows={10}
-                    className="min-h-[150px] font-mono text-sm"
+                    className="min-h-[150px] font-mono text-sm w-full"
                     placeholder={`Enter schedule in Markdown format...`}
                 />
                 <Button onClick={handleMarkdownSave} size="sm" className="mt-2">
@@ -228,16 +232,17 @@ export const SettingsDialog: FC<SettingsDialogProps> = ({
             </div>
 
            {/* Category Management Section */}
-           <div>
-                <Label className="text-lg font-semibold mb-3 block">{t.categoryManagement}</Label>
-                <div className="space-y-3 max-h-[200px] overflow-y-auto pr-1">
+           <div className="space-y-3">
+                <Label className="text-lg font-semibold flex items-center gap-2">{t.categoryManagement}</Label>
+                <div className="space-y-2 max-h-[200px] overflow-y-auto px-1">
                 {localCategories.map((category, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 border rounded-md">
+                    <div key={index} className="flex items-center gap-2 p-2 border rounded-lg bg-card hover:bg-accent/50 transition-colors">
                     <Input
                         type="color"
                         value={category.color}
                         onChange={(e) => handleCategoryColorChange(index, e.target.value)}
-                        className="w-10 h-10 p-1 flex-shrink-0"
+                        className="w-12 h-12 p-1 flex-shrink-0 cursor-pointer"
+                        title="Choose color"
                     />
                     <Input
                         type="text"
@@ -250,7 +255,7 @@ export const SettingsDialog: FC<SettingsDialogProps> = ({
                         variant="ghost"
                         size="icon"
                         onClick={() => handleRemoveCategory(index)}
-                        className="text-destructive hover:text-destructive h-8 w-8"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 h-10 w-10 flex-shrink-0"
                         title={t.removeCategory}
                     >
                         <X className="h-4 w-4" />
@@ -260,10 +265,10 @@ export const SettingsDialog: FC<SettingsDialogProps> = ({
                 ))}
                 </div>
                 <div className="flex gap-2 mt-3">
-                  <Button variant="outline" size="sm" onClick={handleAddCategory}>
+                  <Button variant="outline" size="sm" onClick={handleAddCategory} className="flex-1 sm:flex-initial">
                       <Plus className="mr-2 h-4 w-4" /> {t.addCategory}
                   </Button>
-                  <Button onClick={handleCategoriesSave} size="sm">
+                  <Button onClick={handleCategoriesSave} size="sm" className="flex-1 sm:flex-initial">
                       <Save className="mr-2 h-4 w-4" /> {t.saveCategories}
                   </Button>
                 </div>
