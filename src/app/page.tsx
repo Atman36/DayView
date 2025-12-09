@@ -7,6 +7,8 @@ import { ClockDiagram } from '@/components/clock-diagram';
 import { TaskChecklist } from '@/components/task-checklist';
 import { SettingsDialog } from '@/components/settings-dialog';
 import { TaskDialog } from '@/components/task-dialog';
+import { DayStats } from '@/components/day-stats';
+import { CurrentTaskWidget } from '@/components/current-task-widget';
 import type { Task, Category } from '@/types';
 import { parseMarkdown, generateMarkdown } from '@/utils/markdown';
 import { Button } from '@/components/ui/button';
@@ -202,6 +204,33 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Current Task and Day Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <CurrentTaskWidget
+          tasks={tasks}
+          categories={categories}
+          timezone={timezone}
+          translations={{
+            currentTask: t.currentTask,
+            nextTask: t.nextTask,
+            noCurrentTask: t.noCurrentTask,
+            endsIn: t.endsIn,
+            startsIn: t.startsIn,
+          }}
+        />
+        <DayStats
+          tasks={tasks}
+          categories={categories}
+          translations={{
+            dayFillness: t.dayFillness,
+            conflicts: t.conflicts,
+            categoryBreakdown: t.categoryBreakdown,
+            hours: t.hours,
+            minutes: t.minutes,
+          }}
+        />
       </div>
 
       <Card className="flex-shrink-0">

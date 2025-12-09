@@ -44,8 +44,8 @@ body {
     --sidebar-ring: 180 100% 30%;
   }
   .dark {
-    /* Material-inspired Dark Theme */
-    --background: 222 47% 11%; /* Dark Blue */
+    /* True Black OLED Theme */
+    --background: 0 0% 0%; /* Pure black for OLED */
     --foreground: 210 40% 98%; /* Near White */
     --card: 222 47% 11%;
     --card-foreground: 210 40% 98%;

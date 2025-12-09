@@ -94,6 +94,21 @@ interface Translation {
   freeTimeReading: string;
   eveningRoutine: string;
   sleepTime: string;
+  
+  // Day stats
+  dayFillness: string;
+  conflicts: string;
+  categoryBreakdown: string;
+  hours: string;
+  minutes: string;
+  
+  // Current task widget
+  currentTask: string;
+  nextTask: string;
+  noCurrentTask: string;
+  endsIn: string;
+  startsIn: string;
+  dayStats: string;
 }
 
 const translations: Record<Language, Translation> = {
@@ -187,6 +202,21 @@ const translations: Record<Language, Translation> = {
     freeTimeReading: 'Free Time / Reading',
     eveningRoutine: 'Evening Routine',
     sleepTime: 'Sleep',
+    
+    // Day stats
+    dayFillness: 'Day Fillness',
+    conflicts: 'Conflicts',
+    categoryBreakdown: 'By Category',
+    hours: 'h',
+    minutes: 'm',
+    
+    // Current task widget
+    currentTask: 'Current Task',
+    nextTask: 'Next',
+    noCurrentTask: 'No active tasks',
+    endsIn: 'Ends in',
+    startsIn: 'Starts in',
+    dayStats: 'Day Statistics',
   },
   ru: {
     // Main page
@@ -278,6 +308,21 @@ const translations: Record<Language, Translation> = {
     freeTimeReading: 'Свободное время / Чтение',
     eveningRoutine: 'Вечерняя рутина',
     sleepTime: 'Сон',
+    
+    // Day stats
+    dayFillness: 'Заполненность дня',
+    conflicts: 'Конфликты',
+    categoryBreakdown: 'По категориям',
+    hours: 'ч',
+    minutes: 'м',
+    
+    // Current task widget
+    currentTask: 'Текущая задача',
+    nextTask: 'Далее',
+    noCurrentTask: 'Нет активных задач',
+    endsIn: 'Закончится через',
+    startsIn: 'Начнётся через',
+    dayStats: 'Статистика дня',
   }
 };
 

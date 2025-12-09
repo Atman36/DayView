@@ -6,6 +6,7 @@ import { timeToAngle, getSegmentPath, isDarkColor, timeToAngle12 } from '@/utils
 import { TaskDialog } from './task-dialog';
 import { format } from 'date-fns-tz';
 import { TASK_NAME_SHORTENING } from '@/constants/task-name-shortening';
+import { detectOverlaps } from '@/utils/overlap-detection';
 
 // Time constants
 const MINUTES_PER_DAY = 1440;
@@ -83,6 +84,9 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
       return acc;
     }, {} as Record<string, string>);
   }, [categories]);
+
+  // Detect overlapping tasks
+  const overlappingTaskIds = useMemo(() => detectOverlaps(tasks), [tasks]);
 
   const getTaskColor = (categoryName: string): string => {
     return categoryMap[categoryName] || '#cccccc'; 
@@ -502,14 +506,29 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
           </filter>
         </defs>
         <circle cx={center} cy={center} r={radius} fill="none" stroke="hsl(var(--border))" strokeWidth="0.5" />
-        {segments.map((segment) => (
-          <g key={segment.id} data-segment-id={segment.id} onClick={(e) => segment.originalTask && handleSegmentClick(e, segment.originalTask)} onMouseEnter={() => setHoveredSegment(segment.id)} onMouseLeave={() => setHoveredSegment(null)} className="cursor-pointer group">
-            <path d={segment.path} fill={segment.color} stroke="hsl(var(--background))" strokeWidth="0.5" className="transition-opacity duration-200" style={{ opacity: segment.isHovered ? 0.7 : 1 }}>
-              <title>{segment.name} — {segment.startTime}–{segment.endTime}</title>
-            </path>
-            {renderSegmentText(segment)}
-          </g>
-        ))}
+        {segments.map((segment) => {
+          const isOverlapping = overlappingTaskIds.has(segment.id);
+          return (
+            <g key={segment.id} data-segment-id={segment.id} onClick={(e) => segment.originalTask && handleSegmentClick(e, segment.originalTask)} onMouseEnter={() => setHoveredSegment(segment.id)} onMouseLeave={() => setHoveredSegment(null)} className="cursor-pointer group">
+              <path 
+                d={segment.path} 
+                fill={segment.color} 
+                stroke={isOverlapping ? '#ef4444' : 'hsl(var(--background))'} 
+                strokeWidth={isOverlapping ? 2 : 0.5} 
+                className={`transition-all duration-200 ${isOverlapping ? 'animate-pulse' : ''}`}
+                style={{ 
+                  filter: isOverlapping 
+                    ? `drop-shadow(0 0 8px #ef4444)` 
+                    : `drop-shadow(0 0 ${hoveredSegment === segment.id ? '8px' : '4px'} ${segment.color})`,
+                  opacity: hoveredSegment === segment.id ? 1 : 0.85 
+                }}
+              >
+                <title>{segment.name} — {segment.startTime}–{segment.endTime}{isOverlapping ? ' ⚠️ Конфликт!' : ''}</title>
+              </path>
+              {renderSegmentText(segment)}
+            </g>
+          );
+        })}
         {hourMarkers}
         {currentTimeAngle !== null && (
           <line

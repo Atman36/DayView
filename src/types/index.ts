@@ -5,6 +5,7 @@ export interface Task {
   endTime: string;   // Format HH:MM
   categoryName: string;
   status: string; // Dynamic status based on language (e.g., '⏳ In Progress', '✅ Completed')
+  icon?: string; // Optional emoji/icon for the task
 }
 
 export interface Category {
