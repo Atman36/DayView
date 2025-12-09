@@ -43,6 +43,7 @@ export const TaskDialog: FC<TaskDialogProps> = ({
   const [endTime, setEndTime] = useState('');
   const [categoryName, setCategoryName] = useState('');
   const [status, setStatus] = useState<string>('');
+  const [icon, setIcon] = useState('');
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -59,6 +60,7 @@ export const TaskDialog: FC<TaskDialogProps> = ({
       setEndTime(initialValues?.endTime ?? defEnd);
       setCategoryName(initialValues?.categoryName ?? categories[0]?.name ?? '');
       setStatus(initialValues?.status ?? t.inProgress);
+      setIcon(initialValues?.icon ?? '');
     } else if (task) {
       // Editing existing task
       setName(task.name);
@@ -66,6 +68,7 @@ export const TaskDialog: FC<TaskDialogProps> = ({
       setEndTime(task.endTime);
       setCategoryName(task.categoryName);
       setStatus(task.status);
+      setIcon(task.icon ?? '');
     }
   }, [isOpen, task, isAdding, categories, initialValues]);
 
@@ -84,10 +87,10 @@ export const TaskDialog: FC<TaskDialogProps> = ({
     }
 
     if (isAdding) {
-        const newTaskData: Omit<Task, 'id'> = { name, startTime, endTime, categoryName, status };
+        const newTaskData: Omit<Task, 'id'> = { name, startTime, endTime, categoryName, status, icon: icon || undefined };
         onSave(newTaskData);
     } else if (task) {
-        const updatedTask: Task = { ...task, name, startTime, endTime, categoryName, status };
+        const updatedTask: Task = { ...task, name, startTime, endTime, categoryName, status, icon: icon || undefined };
         onSave(updatedTask);
     }
     
@@ -149,15 +152,25 @@ export const TaskDialog: FC<TaskDialogProps> = ({
             <Label htmlFor="name" className="text-right">
               {t.name}
             </Label>
-            <Input
-              id="name"
-              ref={nameInputRef}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, startTimeInputRef)}
-              className="col-span-3"
-              autoFocus
-            />
+            <div className="col-span-3 flex gap-2">
+              <Input
+                id="icon"
+                value={icon}
+                onChange={(e) => setIcon(e.target.value)}
+                className="w-12 text-center text-lg"
+                placeholder="🎯"
+                maxLength={2}
+              />
+              <Input
+                id="name"
+                ref={nameInputRef}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, startTimeInputRef)}
+                className="flex-1"
+                autoFocus
+              />
+            </div>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="start-time" className="text-right">

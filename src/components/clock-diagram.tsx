@@ -156,7 +156,8 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
           startAngle: startAngle,
           endAngle: endAngle, 
           innerRadius: innerRadius, 
-          isHovered: false // Add hover state
+          isHovered: false, // Add hover state
+          icon: task.icon // Pass icon through
         };
       })
       .flat(); 
@@ -347,8 +348,9 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
     
     if (segment.deltaAngle < 8 || maxTextWidth < fontSize * 2) return null; // минимальный угол слегка увеличен
 
-    const taskName = segment.name.toLowerCase();
-    const shortenedName = TASK_NAME_SHORTENING[taskName] || taskName;
+    // Добавляем иконку перед названием если она есть
+    const taskName = segment.icon ? `${segment.icon} ${segment.name}` : segment.name;
+    const shortenedName = TASK_NAME_SHORTENING[taskName.toLowerCase()] || taskName.toLowerCase();
     
     const words = shortenedName.split(' ');
     
