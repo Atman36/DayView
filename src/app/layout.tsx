@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter as FontSans } from 'next/font/google'; // Using Inter as a common sans-serif font
 import './globals.css';
 import { cn } from '@/lib/utils';
@@ -15,7 +15,6 @@ export const metadata: Metadata = {
   title: 'DayView - Schedule Visualization',
   description: 'Interactive visualization of your daily schedule',
   manifest: '/manifest.json',
-  themeColor: '#00b3b3',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -25,12 +24,14 @@ export const metadata: Metadata = {
     icon: 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚫️</text></svg>',
     apple: '/icons/icon-192.png',
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#00b3b3',
 };
 
 export default function RootLayout({
