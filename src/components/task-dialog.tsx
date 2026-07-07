@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Task, Category } from '@/types';
 import { useTranslation } from '@/hooks/use-translation';
+import { isTaskCompleted } from '@/utils/task-status';
 
 interface TaskDialogProps {
   isOpen: boolean;
@@ -59,7 +60,7 @@ export const TaskDialog: FC<TaskDialogProps> = ({
       setStartTime(initialValues?.startTime ?? defStart);
       setEndTime(initialValues?.endTime ?? defEnd);
       setCategoryName(initialValues?.categoryName ?? categories[0]?.name ?? '');
-      setStatus(initialValues?.status ?? t.inProgress);
+      setStatus(initialValues ? (isTaskCompleted(initialValues.status ?? '') ? t.completed : t.inProgress) : t.inProgress);
       setIcon(initialValues?.icon ?? '');
     } else if (task) {
       // Editing existing task
@@ -67,7 +68,7 @@ export const TaskDialog: FC<TaskDialogProps> = ({
       setStartTime(task.startTime);
       setEndTime(task.endTime);
       setCategoryName(task.categoryName);
-      setStatus(task.status);
+      setStatus(isTaskCompleted(task.status) ? t.completed : t.inProgress);
       setIcon(task.icon ?? '');
     }
   }, [isOpen, task, isAdding, categories, initialValues]);

@@ -3,6 +3,7 @@ import type { FC } from 'react';
 import React, { useState } from 'react';
 import type { Task, Category } from '@/types';
 import { useTranslation } from '@/hooks/use-translation';
+import { isTaskCompleted } from '@/utils/task-status';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Plus } from 'lucide-react';
@@ -30,7 +31,7 @@ export const TaskChecklist: FC<TaskChecklistProps> = ({
 
 
   const handleToggleStatus = (task: Task) => {
-    const newStatus = task.status === t.completed ? t.inProgress : t.completed;
+    const newStatus = isTaskCompleted(task.status) ? t.inProgress : t.completed;
     onUpdateTask({ ...task, status: newStatus });
   };
 
@@ -100,13 +101,13 @@ export const TaskChecklist: FC<TaskChecklistProps> = ({
                 ></span>
               <Checkbox
                 id={`task-${task.id}`}
-                checked={task.status === t.completed}
+                checked={isTaskCompleted(task.status)}
                 onCheckedChange={() => handleToggleStatus(task)}
                 className="flex-shrink-0"
               />
               <div
                 className={`flex-1 min-w-0 text-sm cursor-pointer truncate ${
-                  task.status === t.completed ? 'line-through text-muted-foreground' : ''
+                  isTaskCompleted(task.status) ? 'line-through text-muted-foreground' : ''
                 }`}
                 onClick={() => handleEditClick(task)}
               >
