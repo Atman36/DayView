@@ -110,6 +110,10 @@ interface Translation {
   startsIn: string;
   dayStats: string;
   zeroDurationError: string;
+
+  // Dial captions
+  dayLabel: string;
+  nightLabel: string;
 }
 
 const translations: Record<Language, Translation> = {
@@ -219,6 +223,8 @@ const translations: Record<Language, Translation> = {
     startsIn: 'Starts in',
     dayStats: 'Day Statistics',
     zeroDurationError: 'Start and end times cannot be the same',
+    dayLabel: 'Day',
+    nightLabel: 'Night',
   },
   ru: {
     // Main page
@@ -326,6 +332,8 @@ const translations: Record<Language, Translation> = {
     startsIn: 'Начнётся через',
     dayStats: 'Статистика дня',
     zeroDurationError: 'Время начала и окончания не должно совпадать',
+    dayLabel: 'День',
+    nightLabel: 'Ночь',
   }
 };
 

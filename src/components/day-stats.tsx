@@ -36,27 +36,16 @@ export const DayStats: FC<DayStatsProps> = ({ tasks, categories, translations })
     const overlappingIds = detectOverlaps(tasks);
     const conflictCount = overlappingIds.size > 0 ? Math.floor(overlappingIds.size / 2) : 0;
 
-    // Category breakdown
     const categoryStats: Record<string, number> = {};
     tasks.forEach(task => {
       const duration = getTaskDuration(task);
       categoryStats[task.categoryName] = (categoryStats[task.categoryName] || 0) + duration;
     });
 
-    return {
-      totalMinutes,
-      fillPercentage,
-      conflictCount,
-      categoryStats,
-      overlappingIds
-    };
-  }, [tasks]);
+    const rows = Object.entries(categoryStats).sort((a, b) => b[1] - a[1]);
 
-  const getProgressColor = (percentage: number): string => {
-    if (percentage > 100) return 'bg-red-500';
-    if (percentage >= 80) return 'bg-yellow-500';
-    return 'bg-green-500';
-  };
+    return { totalMinutes, fillPercentage, conflictCount, rows };
+  }, [tasks]);
 
   const getCategoryColor = (categoryName: string): string => {
     const category = categories.find(c => c.name === categoryName);
@@ -73,54 +62,54 @@ export const DayStats: FC<DayStatsProps> = ({ tasks, categories, translations })
     return `${mins}${translations.minutes}`;
   };
 
+  const labelCls = 'font-mono text-[10px] tracking-[0.16em] uppercase text-muted-foreground';
+
   return (
-    <div className="p-4 rounded-lg bg-card border border-border space-y-4">
-      {/* Day Fillness */}
-      <div>
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium">{translations.dayFillness}</span>
-          <span className={`text-sm font-bold ${stats.fillPercentage > 100 ? 'text-red-500' : ''}`}>
-            {stats.fillPercentage}%
-          </span>
-        </div>
-        <div className="h-2 bg-muted rounded-full overflow-hidden">
-          <div 
-            className={`h-full transition-all duration-300 ${getProgressColor(stats.fillPercentage)}`}
-            style={{ width: `${Math.min(stats.fillPercentage, 100)}%` }}
-          />
-        </div>
+    <div className="rounded-md border border-border bg-card p-4 flex flex-col gap-2 h-full">
+      <span className={labelCls}>{translations.dayFillness}</span>
+
+      <div className="flex items-baseline gap-2.5">
+        <span className={`font-semibold text-3xl leading-none ${stats.fillPercentage > 100 ? 'text-destructive' : ''}`}>
+          {stats.fillPercentage}%
+        </span>
+        <span className="font-mono text-[10px] text-muted-foreground">
+          {formatDuration(stats.totalMinutes)} / 24{translations.hours}
+        </span>
       </div>
 
-      {/* Conflicts */}
-      {stats.conflictCount > 0 && (
-        <div className="flex items-center gap-2 p-2 rounded bg-red-500/10 border border-red-500/30">
-          <span className="text-red-500">⚠️</span>
-          <span className="text-sm text-red-500 font-medium">
-            {translations.conflicts}: {stats.conflictCount}
-          </span>
-        </div>
-      )}
+      {/* Stacked category bar (relative to 24h) */}
+      <div className="flex h-2 rounded-sm overflow-hidden bg-muted my-1">
+        {stats.rows.map(([category, minutes]) => (
+          <div
+            key={category}
+            style={{
+              width: `${Math.min(100, (minutes / 1440) * 100)}%`,
+              backgroundColor: getCategoryColor(category),
+            }}
+          />
+        ))}
+      </div>
 
-      {/* Category Breakdown */}
-      {Object.keys(stats.categoryStats).length > 0 && (
-        <div>
-          <span className="text-sm font-medium mb-2 block">{translations.categoryBreakdown}</span>
-          <div className="space-y-2">
-            {Object.entries(stats.categoryStats)
-              .sort((a, b) => b[1] - a[1])
-              .map(([category, minutes]) => (
-                <div key={category} className="flex items-center gap-2">
-                  <div 
-                    className="w-3 h-3 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: getCategoryColor(category) }}
-                  />
-                  <span className="text-sm flex-1 truncate">{category}</span>
-                  <span className="text-sm text-muted-foreground">
-                    {formatDuration(minutes)}
-                  </span>
-                </div>
-              ))}
+      {/* Category rows */}
+      <div className="flex flex-col">
+        {stats.rows.map(([category, minutes]) => (
+          <div key={category} className="flex items-center gap-2 py-1">
+            <span
+              className="w-2 h-2 rounded-sm flex-shrink-0"
+              style={{ backgroundColor: getCategoryColor(category) }}
+            />
+            <span className="text-[12.5px] flex-1 truncate">{category}</span>
+            <span className="font-mono text-[11px] text-muted-foreground">{formatDuration(minutes)}</span>
+            <span className="font-mono text-[11px] text-muted-foreground w-9 text-right">
+              {Math.round((minutes / 1440) * 100)}%
+            </span>
           </div>
+        ))}
+      </div>
+
+      {stats.conflictCount > 0 && (
+        <div className="font-mono text-[10.5px] text-destructive mt-1">
+          ⚠️ {translations.conflicts}: {stats.conflictCount}
         </div>
       )}
     </div>

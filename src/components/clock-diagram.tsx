@@ -15,6 +15,20 @@ const MINUTES_PER_12_HOURS = 720;
 const DEFAULT_TASK_DURATION_MINUTES = 120; // 2 hours
 const CURRENT_TIME_UPDATE_INTERVAL_MS = 300000; // 5 minutes
 
+// Nocturne dial geometry (viewBox 360 x 370, center at 180,180)
+const CENTER = 180;
+const FACE_R = 170;   // dial face + backdrop for the dotted ring
+const DOT_R = 163;    // dotted minute ring radius
+const NUM_R = 145;    // hour numbers (mono), sit inside the dot ring
+const SEG_R = 132;    // task segment outer radius (inside the numbers)
+const HAND_LEN = 120; // current-time hand length
+const TAIL_LEN = 26;  // amber counterweight length
+
+// Dotted ring dash geometry: round-capped 0.1 dashes render as dots.
+const DOT_CIRC = 2 * Math.PI * DOT_R;
+const MINOR_DASH = `0.1 ${(DOT_CIRC / 60 - 0.1).toFixed(3)}`; // 60 minute dots
+const MAJOR_DASH = `0.1 ${(DOT_CIRC / 12 - 0.1).toFixed(3)}`; // 12 hour dots
+
 interface ClockDiagramProps {
   startTime: string;
   endTime: string;
@@ -38,8 +52,8 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
   onEditTask,
   onDeleteTask,
 }) => {
-  const radius = 160; 
-  const center = 180; 
+  const center = CENTER;
+  const radius = SEG_R;
   const [isClient, setIsClient] = useState(false);
   const [hoveredSegment, setHoveredSegment] = useState<string | null>(null);
   const [hoveredEdge, setHoveredEdge] = useState<{ taskId: string; edge: "start" | "end" } | null>(null);
@@ -90,7 +104,7 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
   const overlappingTaskIds = useMemo(() => detectOverlaps(tasks), [tasks]);
 
   const getTaskColor = (categoryName: string): string => {
-    return categoryMap[categoryName] || '#cccccc'; 
+    return categoryMap[categoryName] || '#cccccc';
   };
 
   const isTimeVisible = useCallback(
@@ -124,7 +138,7 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
   const startMinuteAbs = useMemo(() => convertTimeToMinutes(startTime), [startTime]);
 
   const calculateAngle = useCallback((time: string): number => {
-    return timeToAngle12(time); 
+    return timeToAngle12(time);
   }, []);
 
   const segments = useMemo(() => {
@@ -168,158 +182,37 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
     });
   }, [tasks, categories, categoryMap, center, radius, isClient, startTime]);
 
-  const hourMarkers = useMemo(() => {
+  // Hour numbers (mono) placed INSIDE the dotted ring — the Nocturne signature.
+  const hourNumbers = useMemo(() => {
     if (!isClient) return [];
-    const markers: JSX.Element[] = [];
-    const textOffset = 15; 
-    const majorTickLength = 5;
-    const minorTickLength = 3;
-    const halfHourTickLength = 2;
-    
-    const displayHours: number[] = [];
-    const specialHours: number[] = []; 
-    
-    if (isDayClock) {
-        for (let h = 7; h < 18; h++) {
-            if (h !== 12) { 
-                displayHours.push(h);
-            }
-        }
-        specialHours.push(6); 
-        specialHours.push(12); 
-    } else {
-        for (let h = 19; h < 24; h++) displayHours.push(h);
-        for (let h = 1; h < 6; h++) displayHours.push(h);
-        
-        specialHours.push(18); 
-        specialHours.push(24); 
-    }
-    
-    displayHours.forEach(hour24 => {
-        const time = `${hour24.toString().padStart(2, '0')}:00`;
-        const angle = calculateAngle(time);
-        
-        const isMajor = (hour24 % 3 === 0); 
-        
-        const x = center + (radius + textOffset) * Math.cos(((angle - 90) * Math.PI) / 180);
-        let y = center + (radius + textOffset) * Math.sin(((angle - 90) * Math.PI) / 180);
-        
-        // Adjust positioning for top numbers to prevent clipping
-        if ((hour24 === 12 && isDayClock) || (hour24 === 0 && !isDayClock)) {
-            y += 3;
-        }
-        
-        markers.push(
-            <text
-                key={`hour-label-${hour24}`}
-                x={x}
-                y={y}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fontSize="11" 
-                fontWeight={isMajor ? "bold" : "normal"}
-                fill="hsl(var(--foreground))"
-                opacity={isMajor ? "1" : "0.7"}
-                style={{ paintOrder: 'stroke fill', stroke: 'white', strokeWidth: isMajor ? 0.8 : 0.4, strokeLinejoin: 'round' }}
-            >
-                {hour24.toString()}
-            </text>
-        );
-        
-        const tickLength = isMajor ? majorTickLength : minorTickLength;
-        const markerRadius = radius + tickLength;
-        const x1 = center + radius * Math.cos(((angle - 90) * Math.PI) / 180);
-        const y1 = center + radius * Math.sin(((angle - 90) * Math.PI) / 180);
-        const x2 = center + markerRadius * Math.cos(((angle - 90) * Math.PI) / 180);
-        const y2 = center + markerRadius * Math.sin(((angle - 90) * Math.PI) / 180);
-        
-        markers.push(
-            <line
-                key={`hour-tick-${hour24}`}
-                x1={x1}
-                y1={y1}
-                x2={x2}
-                y2={y2}
-                stroke="hsl(var(--foreground))"
-                opacity="0.5"
-                strokeWidth={isMajor ? 1.5 : 1}
-            />
-        );
-        
-        const halfHourAngle = calculateAngle(`${hour24.toString().padStart(2, '0')}:30`);
-        const hx1 = center + radius * Math.cos(((halfHourAngle - 90) * Math.PI) / 180);
-        const hy1 = center + radius * Math.sin(((halfHourAngle - 90) * Math.PI) / 180);
-        const hx2 = center + (radius + halfHourTickLength) * Math.cos(((halfHourAngle - 90) * Math.PI) / 180);
-        const hy2 = center + (radius + halfHourTickLength) * Math.sin(((halfHourAngle - 90) * Math.PI) / 180);
-        
-        markers.push(
-            <line
-                key={`half-hour-${hour24}`}
-                x1={hx1}
-                y1={hy1}
-                x2={hx2}
-                y2={hy2}
-                stroke="hsl(var(--foreground))"
-                strokeWidth="0.5"
-                opacity="0.4"
-            />
-        );
+    const hours = isDayClock
+      ? [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+      : [19, 20, 21, 22, 23, 24, 1, 2, 3, 4, 5, 6];
+
+    return hours.map((hour24) => {
+      const time = `${(hour24 % 24).toString().padStart(2, '0')}:00`;
+      const angle = calculateAngle(time);
+      const x = center + NUM_R * Math.cos(((angle - 90) * Math.PI) / 180);
+      const y = center + NUM_R * Math.sin(((angle - 90) * Math.PI) / 180);
+      const isCardinal = hour24 === 12 || hour24 === 24 || hour24 === 6 || hour24 === 18;
+      return (
+        <text
+          key={`hour-${hour24}`}
+          x={x}
+          y={y}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={isCardinal ? 15 : 13}
+          fontWeight={isCardinal ? 600 : 500}
+          fill="var(--dial-ink)"
+          opacity={isCardinal ? 1 : 0.82}
+          style={{ fontFamily: 'var(--font-mono)' }}
+        >
+          {hour24.toString()}
+        </text>
+      );
     });
-    
-    specialHours.forEach(hour24 => {
-        const time = `${hour24.toString().padStart(2, '0')}:00`;
-        const angle = calculateAngle(time);
-        
-        const specialOffset = textOffset + 2;
-        const specialX = center + (radius + specialOffset) * Math.cos(((angle - 90) * Math.PI) / 180);
-        let specialY = center + (radius + specialOffset) * Math.sin(((angle - 90) * Math.PI) / 180);
-        
-        if ((hour24 === 6 && isDayClock) || (hour24 === 18 && !isDayClock)) {
-            specialY += 6; 
-        } else if ((hour24 === 12 && isDayClock) || (hour24 === 24 && !isDayClock)) {
-            specialY += 4; // Move numbers down to prevent clipping
-        }
-        
-        markers.push(
-            <text
-                key={`special-hour-${hour24}-${isDayClock ? 'day' : 'night'}`}
-                x={specialX}
-                y={specialY}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fontSize="12" 
-                fontWeight="bold"
-                fill="hsl(var(--foreground))"
-                opacity="1"
-                style={{ paintOrder: 'stroke fill', stroke: 'white', strokeWidth: 0.8, strokeLinejoin: 'round' }}
-            >
-                {hour24.toString()}
-            </text>
-        );
-        
-        const tickLength = majorTickLength;
-        const markerRadius = radius + tickLength;
-        const x1 = center + radius * Math.cos(((angle - 90) * Math.PI) / 180);
-        const y1 = center + radius * Math.sin(((angle - 90) * Math.PI) / 180);
-        const x2 = center + markerRadius * Math.cos(((angle - 90) * Math.PI) / 180);
-        const y2 = center + markerRadius * Math.sin(((angle - 90) * Math.PI) / 180);
-        
-        markers.push(
-            <line
-                key={`special-hour-tick-${hour24}-${isDayClock ? 'day' : 'night'}`}
-                x1={x1}
-                y1={y1}
-                x2={x2}
-                y2={y2}
-                stroke="hsl(var(--foreground))"
-                opacity="0.6"
-                strokeWidth={1.5}
-            />
-        );
-    });
-    
-    return markers;
-  }, [isDayClock, center, radius, isClient, calculateAngle]);
+  }, [isDayClock, center, isClient, calculateAngle]);
 
   const handleSegmentClick = (e: React.MouseEvent, task: Task) => {
     e.stopPropagation();
@@ -357,34 +250,34 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
   }) => {
     const textRadius = segment.innerRadius + (radius - segment.innerRadius) * 0.7;
     const approximateArcLength = segment.deltaAngle * (Math.PI / 180) * textRadius;
-    const fontSize = 9; 
-    const averageCharWidth = 5.5; 
+    const fontSize = 9;
+    const averageCharWidth = 5.5;
     const maxTextWidth = approximateArcLength * 0.9;
     const charactersPerLine = Math.max(1, Math.floor(maxTextWidth / averageCharWidth));
-    
+
     if (segment.deltaAngle < 8 || maxTextWidth < fontSize * 2) return null; // минимальный угол слегка увеличен
 
     // Добавляем иконку перед названием если она есть
     const taskName = segment.icon ? `${segment.icon} ${segment.name}` : segment.name;
     const shortenedName = TASK_NAME_SHORTENING[taskName.toLowerCase()] || taskName.toLowerCase();
-    
+
     const words = shortenedName.split(' ');
-    
-    const MAX_LINES = 3; 
-    
+
+    const MAX_LINES = 3;
+
     const displayLines: string[] = [];
     let currentLine = '';
     let lineCount = 0;
     let truncated = false;
-    
+
     for (const word of words) {
       if (truncated) break;
-      
+
       if (lineCount >= MAX_LINES) {
         truncated = true;
         break;
       }
-      
+
       if (currentLine.length + word.length + (currentLine ? 1 : 0) <= charactersPerLine) {
         currentLine += (currentLine ? ' ' : '') + word;
       } else {
@@ -402,28 +295,25 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
         }
       }
     }
-    
+
     if (currentLine && lineCount < MAX_LINES) {
       displayLines.push(currentLine);
     }
-    
+
     if (truncated && displayLines.length < MAX_LINES) {
       displayLines[displayLines.length - 1] += '…';
     }
-    
+
     const midpointAngle = segment.startAngle + segment.deltaAngle / 2;
-    
-    const lineHeight = fontSize * 1.2;
-    
-    const textX = center + textRadius * Math.cos((midpointAngle - 90) * (Math.PI / 180));
-    const textY = center + textRadius * Math.sin((midpointAngle - 90) * (Math.PI / 180));
-    
+
+    const lineHeight = fontSize * 1.25;
+
     return displayLines.map((line, index) => {
       const lineOffset = (index - (displayLines.length - 1) / 2) * lineHeight;
-      
+
       const textX = center + textRadius * Math.cos((midpointAngle - 90) * (Math.PI / 180));
       const textY = center + textRadius * Math.sin((midpointAngle - 90) * (Math.PI / 180)) + lineOffset;
-      
+
       return (
         <text
           key={`segment-text-${segment.id}-${index}`}
@@ -431,10 +321,11 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
           y={textY}
           textAnchor="middle"
           dominantBaseline="middle"
-          fill={isDarkColor(segment.color) ? "#FFFFFF" : "#000000"}
+          fill={isDarkColor(segment.color) ? "#FFFFFF" : "#1A1A18"}
           fontSize={fontSize}
-          fontWeight="normal"
-          opacity={segment.id === hoveredSegment ? 1 : 0.8}
+          fontWeight="600"
+          opacity={segment.id === hoveredSegment ? 1 : 0.92}
+          style={{ fontFamily: 'var(--font-sans)' }}
         >
           {line}
         </text>
@@ -494,38 +385,71 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
     setIsAddDialogOpen(true);
   };
 
+  // Current-time hand endpoints (Nocturne: ink hand + amber counterweight tail).
+  let handGeom: { hx: number; hy: number; tx: number; ty: number } | null = null;
+  if (currentTimeAngle !== null) {
+    const rad = ((currentTimeAngle - 90) * Math.PI) / 180;
+    handGeom = {
+      hx: center + HAND_LEN * Math.cos(rad),
+      hy: center + HAND_LEN * Math.sin(rad),
+      tx: center - TAIL_LEN * Math.cos(rad),
+      ty: center - TAIL_LEN * Math.sin(rad),
+    };
+  }
+
   return (
     <div className="relative w-full h-full">
-      <svg viewBox="0 0 360 370" className="w-full h-full" style={{ padding: '20px' }} onClick={handleBackgroundClick}>
-        <defs>
-          <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
-            <feOffset dx="0" dy="2" result="offsetblur" />
-            <feComponentTransfer>
-              <feFuncA type="linear" slope="0.3" />
-            </feComponentTransfer>
-            <feMerge>
-              <feMergeNode />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-        <circle cx={center} cy={center} r={radius} fill="none" stroke="hsl(var(--border))" strokeWidth="0.5" />
+      <svg viewBox="0 0 360 370" className="w-full h-full" style={{ padding: '6px' }} onClick={handleBackgroundClick}>
+        {/* Dial face */}
+        <circle cx={center} cy={center} r={FACE_R} fill="var(--dial-face)" stroke="var(--dial-hair)" strokeWidth="1" />
+
+        {/* Dotted minute ring — 60 minute dots + 12 hour dots (signature) */}
+        <g transform={`rotate(-90 ${center} ${center})`}>
+          <circle
+            cx={center}
+            cy={center}
+            r={DOT_R}
+            fill="none"
+            stroke="var(--dial-ink2)"
+            strokeWidth="2.2"
+            strokeDasharray={MINOR_DASH}
+            strokeLinecap="round"
+          />
+          <circle
+            cx={center}
+            cy={center}
+            r={DOT_R}
+            fill="none"
+            stroke="var(--dial-ink)"
+            strokeWidth="4.2"
+            strokeDasharray={MAJOR_DASH}
+            strokeLinecap="round"
+          />
+        </g>
+
+        {/* Task segments */}
         {segments.map((segment) => {
           const isOverlapping = overlappingTaskIds.has(segment.id);
+          const isHovered = hoveredSegment === segment.id;
           return (
-            <g key={segment.segmentKey} data-segment-id={segment.id} onClick={(e) => segment.originalTask && handleSegmentClick(e, segment.originalTask)} onMouseEnter={() => setHoveredSegment(segment.id)} onMouseLeave={() => setHoveredSegment(null)} className="cursor-pointer group">
-              <path 
-                d={segment.path} 
-                fill={segment.color} 
-                stroke={isOverlapping ? '#ef4444' : 'hsl(var(--background))'} 
-                strokeWidth={isOverlapping ? 2 : 0.5} 
-                className={`transition-all duration-200 ${isOverlapping ? 'animate-pulse' : ''}`}
-                style={{ 
-                  filter: isOverlapping 
-                    ? `drop-shadow(0 0 8px #ef4444)` 
-                    : `drop-shadow(0 0 ${hoveredSegment === segment.id ? '8px' : '4px'} ${segment.color})`,
-                  opacity: hoveredSegment === segment.id ? 1 : 0.85 
+            <g
+              key={segment.segmentKey}
+              data-segment-id={segment.id}
+              onClick={(e) => segment.originalTask && handleSegmentClick(e, segment.originalTask)}
+              onMouseEnter={() => setHoveredSegment(segment.id)}
+              onMouseLeave={() => setHoveredSegment(null)}
+              className="cursor-pointer group"
+            >
+              <path
+                d={segment.path}
+                fill={segment.color}
+                stroke={isOverlapping ? 'var(--dial-warn)' : 'var(--dial-face)'}
+                strokeWidth={isOverlapping ? 2 : 1.1}
+                strokeLinejoin="round"
+                className={`transition-all duration-150 ${isOverlapping ? 'animate-pulse' : ''}`}
+                style={{
+                  filter: isHovered ? 'brightness(1.08)' : 'none',
+                  opacity: isOverlapping ? 1 : isHovered ? 1 : 0.94,
                 }}
               >
                 <title>{segment.name} — {segment.startTime}–{segment.endTime}{isOverlapping ? ' ⚠️ Конфликт!' : ''}</title>
@@ -534,20 +458,57 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
             </g>
           );
         })}
-        {hourMarkers}
-        {currentTimeAngle !== null && (
+
+        {/* Hour numbers */}
+        {hourNumbers}
+
+        {/* Micro wordmark below center */}
+        <text
+          x={center}
+          y={center + 28}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize="7.5"
+          fill="var(--dial-ink2)"
+          opacity="0.55"
+          letterSpacing="2.4"
+          style={{ fontFamily: 'var(--font-mono)', pointerEvents: 'none' }}
+        >
+          DAYVIEW
+        </text>
+
+        {/* Current-time hand with amber counterweight */}
+        {handGeom && (
           <g className="pointer-events-none">
+            <line
+              x1={handGeom.tx}
+              y1={handGeom.ty}
+              x2={handGeom.hx}
+              y2={handGeom.hy}
+              stroke="var(--dial-halo)"
+              strokeWidth="9"
+              strokeLinecap="round"
+            />
             <line
               x1={center}
               y1={center}
-              x2={center + radius * 0.95 * Math.cos(((currentTimeAngle - 90) * Math.PI) / 180)}
-              y2={center + radius * 0.95 * Math.sin(((currentTimeAngle - 90) * Math.PI) / 180)}
-              stroke="hsl(var(--destructive))"
-              strokeWidth="2"
+              x2={handGeom.tx}
+              y2={handGeom.ty}
+              stroke="var(--dial-amber)"
+              strokeWidth="4.5"
               strokeLinecap="round"
             />
-            <circle cx={center} cy={center} r={3} fill="hsl(var(--destructive))" />
-            <circle cx={center} cy={center} r={1} fill="hsl(var(--background))" />
+            <line
+              x1={center}
+              y1={center}
+              x2={handGeom.hx}
+              y2={handGeom.hy}
+              stroke="var(--dial-ink)"
+              strokeWidth="3.6"
+              strokeLinecap="round"
+            />
+            <circle cx={center} cy={center} r={7} fill="var(--dial-ink)" />
+            <circle cx={center} cy={center} r={3} fill="var(--dial-amber)" />
           </g>
         )}
       </svg>

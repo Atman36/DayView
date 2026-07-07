@@ -1,14 +1,22 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter as FontSans } from 'next/font/google'; // Using Inter as a common sans-serif font
+import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster'; // Import Toaster
 import { TranslationProvider } from '@/components/translation-provider';
 import Script from 'next/script';
 
-const fontSans = FontSans({
-  subsets: ['latin', 'cyrillic'], // Add cyrillic subset
+// Nocturne typography: Archivo for display/UI, IBM Plex Mono for numbers, time & labels.
+const fontSans = Archivo({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
   variable: '--font-sans',
+});
+
+const fontMono = IBM_Plex_Mono({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '500', '600'],
+  variable: '--font-mono',
 });
 
 export const metadata: Metadata = {
@@ -44,7 +52,8 @@ export default function RootLayout({
       <body
         className={cn(
           'min-h-screen bg-background font-sans antialiased',
-          fontSans.variable
+          fontSans.variable,
+          fontMono.variable
         )}
       >
         {/* Initial theme from localStorage/system to avoid flash */}

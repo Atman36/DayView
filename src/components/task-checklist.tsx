@@ -6,7 +6,7 @@ import { useTranslation } from '@/hooks/use-translation';
 import { isTaskCompleted } from '@/utils/task-status';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Plus } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { TaskDialog } from './task-dialog'; // Re-use TaskDialog for editing
 
 interface TaskChecklistProps {
@@ -83,60 +83,56 @@ export const TaskChecklist: FC<TaskChecklistProps> = ({
 
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col">
 
       {tasks.length === 0 ? (
          <p className="text-muted-foreground text-center py-4">{t.noTasksDisplay}</p>
        ) : (
-        tasks.map((task) => (
+        tasks.map((task) => {
+          const done = isTaskCompleted(task.status);
+          return (
           <div
             key={task.id}
-            className="flex items-center justify-between p-3 bg-card border rounded-lg shadow-sm hover:bg-accent/50 transition-colors"
+            className="group flex items-center gap-2.5 py-2 border-t border-border first:border-t-0"
+            style={{ opacity: done ? 0.55 : 1 }}
           >
-            <div className="flex items-center space-x-3 flex-1 min-w-0">
-               <span
-                  className="h-3 w-3 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: getCategoryColor(task.categoryName) }}
-                  title={task.categoryName}
-                ></span>
-              <Checkbox
-                id={`task-${task.id}`}
-                checked={isTaskCompleted(task.status)}
-                onCheckedChange={() => handleToggleStatus(task)}
-                className="flex-shrink-0"
-              />
-              <div
-                className={`flex-1 min-w-0 text-sm cursor-pointer truncate ${
-                  isTaskCompleted(task.status) ? 'line-through text-muted-foreground' : ''
-                }`}
-                onClick={() => handleEditClick(task)}
-              >
-                 <span className="font-mono text-xs mr-2">{task.startTime}-{task.endTime}</span>
-                 {task.name}
-              </div>
-            </div>
-            <div className="flex items-center space-x-1 ml-2 flex-shrink-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => handleEditClick(task)}
-              >
-                <Edit className="h-4 w-4" />
-                 <span className="sr-only">{t.editTaskSr}</span>
-              </Button>
-               <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-destructive hover:text-destructive"
-                  onClick={() => handleDeleteClick(task.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  <span className="sr-only">{t.deleteTaskSr}</span>
-               </Button>
-            </div>
+            <Checkbox
+              id={`task-${task.id}`}
+              checked={done}
+              onCheckedChange={() => handleToggleStatus(task)}
+              className="flex-shrink-0"
+            />
+            <span
+              className="h-2.5 w-2.5 rounded-full flex-shrink-0"
+              style={{ backgroundColor: getCategoryColor(task.categoryName) }}
+              title={task.categoryName}
+            />
+            <span
+              className={`flex-1 min-w-0 text-[13.5px] font-medium cursor-pointer truncate ${
+                done ? 'line-through' : ''
+              }`}
+              onClick={() => handleEditClick(task)}
+            >
+              {task.icon} {task.name}
+            </span>
+            <span className="font-mono text-[12px] text-muted-foreground flex-shrink-0">
+              {task.startTime}–{task.endTime}
+            </span>
+            <span className="font-mono text-[10.5px] text-muted-foreground flex-shrink-0 hidden sm:inline">
+              {task.status}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+              onClick={() => handleDeleteClick(task.id)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span className="sr-only">{t.deleteTaskSr}</span>
+            </Button>
           </div>
-        ))
+          );
+        })
        )}
 
         {isTaskDialogOpen && (

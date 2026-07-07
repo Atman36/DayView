@@ -31,11 +31,11 @@ const formatTimeRemaining = (minutes: number): string => {
   return `${mins}m`;
 };
 
-export const CurrentTaskWidget: FC<CurrentTaskWidgetProps> = ({ 
-  tasks, 
-  categories, 
+export const CurrentTaskWidget: FC<CurrentTaskWidgetProps> = ({
+  tasks,
+  categories,
   timezone,
-  translations 
+  translations,
 }) => {
   const [currentMinutes, setCurrentMinutes] = useState<number>(0);
 
@@ -51,13 +51,14 @@ export const CurrentTaskWidget: FC<CurrentTaskWidgetProps> = ({
     return () => clearInterval(interval);
   }, [timezone]);
 
-  const { currentTask, nextTask, timeRemaining, timeUntilNext } = useMemo(() => {
+  const { currentTask, nextTask, timeRemaining, timeUntilNext, progress } = useMemo(() => {
     let current: Task | null = null;
     let next: Task | null = null;
     let remaining = 0;
     let untilNext = Infinity;
+    let prog = 0;
 
-    const sortedTasks = [...tasks].sort((a, b) => 
+    const sortedTasks = [...tasks].sort((a, b) =>
       timeToMinutes(a.startTime) - timeToMinutes(b.startTime)
     );
 
@@ -66,13 +67,15 @@ export const CurrentTaskWidget: FC<CurrentTaskWidgetProps> = ({
       let end = timeToMinutes(task.endTime);
       if (end <= start) end += 1440; // overnight
 
-      const adjustedCurrent = currentMinutes < start && end > 1440 
-        ? currentMinutes + 1440 
+      const adjustedCurrent = currentMinutes < start && end > 1440
+        ? currentMinutes + 1440
         : currentMinutes;
 
       if (adjustedCurrent >= start && adjustedCurrent < end) {
         current = task;
         remaining = end - adjustedCurrent;
+        const duration = end - start;
+        prog = duration > 0 ? Math.max(0, Math.min(100, ((duration - remaining) / duration) * 100)) : 0;
       } else if (start > currentMinutes && !next) {
         next = task;
         untilNext = start - currentMinutes;
@@ -89,11 +92,12 @@ export const CurrentTaskWidget: FC<CurrentTaskWidgetProps> = ({
       }
     }
 
-    return { 
-      currentTask: current, 
-      nextTask: next, 
+    return {
+      currentTask: current,
+      nextTask: next,
       timeRemaining: remaining,
-      timeUntilNext: untilNext
+      timeUntilNext: untilNext,
+      progress: prog,
     };
   }, [tasks, currentMinutes]);
 
@@ -102,9 +106,11 @@ export const CurrentTaskWidget: FC<CurrentTaskWidgetProps> = ({
     return category?.color || '#888888';
   };
 
+  const labelCls = 'font-mono text-[10px] tracking-[0.16em] uppercase text-muted-foreground';
+
   if (!currentTask && !nextTask) {
     return (
-      <div className="p-4 rounded-lg bg-card border border-border">
+      <div className="rounded-md border border-border bg-card p-4 flex items-center justify-center min-h-[120px]">
         <p className="text-sm text-muted-foreground text-center">
           {translations.noCurrentTask}
         </p>
@@ -113,61 +119,66 @@ export const CurrentTaskWidget: FC<CurrentTaskWidgetProps> = ({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="rounded-md border border-border bg-card p-4 flex flex-col gap-2.5 h-full">
       {/* Current Task */}
-      {currentTask && (
-        <div 
-          className="p-4 rounded-lg border-2 transition-all"
-          style={{ 
-            borderColor: getCategoryColor(currentTask.categoryName),
-            boxShadow: `0 0 12px ${getCategoryColor(currentTask.categoryName)}40`
-          }}
-        >
-          <div className="flex items-center gap-2 mb-1">
-            <div 
-              className="w-2 h-2 rounded-full animate-pulse"
-              style={{ backgroundColor: getCategoryColor(currentTask.categoryName) }}
-            />
-            <span className="text-xs text-muted-foreground uppercase tracking-wide">
-              {translations.currentTask}
-            </span>
+      {currentTask ? (
+        <>
+          <div className="flex items-center justify-between">
+            <span className={labelCls}>{translations.currentTask}</span>
+            <span className="font-mono text-[10.5px] text-muted-foreground">{currentTask.status}</span>
           </div>
-          <h3 className="font-semibold text-lg">{currentTask.icon} {currentTask.name}</h3>
-          <div className="flex justify-between items-center mt-2">
-            <span className="text-sm text-muted-foreground">
+          <div className="font-semibold text-xl leading-tight">
+            {currentTask.icon} {currentTask.name}
+          </div>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="font-mono text-[13px]">
               {currentTask.startTime} – {currentTask.endTime}
             </span>
-            <span className="text-sm font-medium">
-              {translations.endsIn} {formatTimeRemaining(timeRemaining)}
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground">
+              <span
+                className="w-[7px] h-[7px] rounded-full"
+                style={{ backgroundColor: getCategoryColor(currentTask.categoryName) }}
+              />
+              {currentTask.categoryName}
             </span>
           </div>
+          <div className="h-[3px] rounded bg-muted overflow-hidden">
+            <div className="h-full bg-primary transition-all duration-500" style={{ width: `${progress}%` }} />
+          </div>
+          <div className="font-mono text-[10.5px] text-muted-foreground">
+            {translations.endsIn} {formatTimeRemaining(timeRemaining)}
+          </div>
+        </>
+      ) : (
+        <div className="flex items-center justify-between">
+          <span className={labelCls}>{translations.currentTask}</span>
+          <span className="font-mono text-[10.5px] text-muted-foreground">—</span>
         </div>
       )}
 
       {/* Next Task */}
       {nextTask && (
-        <div className="p-3 rounded-lg bg-muted/50 border border-border">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs text-muted-foreground uppercase tracking-wide">
-              {translations.nextTask}
+        <>
+          <div className="mt-auto pt-1 h-px bg-border" />
+          <div className="flex items-center justify-between">
+            <span className={labelCls}>{translations.nextTask}</span>
+            <span className="font-mono text-[10.5px] text-muted-foreground">
+              {formatTimeRemaining(timeUntilNext)}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <div 
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: getCategoryColor(nextTask.categoryName) }}
-            />
-            <span className="font-medium">{nextTask.icon} {nextTask.name}</span>
-          </div>
-          <div className="flex justify-between items-center mt-1">
-            <span className="text-xs text-muted-foreground">
+          <div className="flex items-center justify-between gap-2.5">
+            <span className="font-semibold text-sm flex items-center gap-2 min-w-0">
+              <span
+                className="w-[7px] h-[7px] rounded-full flex-shrink-0"
+                style={{ backgroundColor: getCategoryColor(nextTask.categoryName) }}
+              />
+              <span className="truncate">{nextTask.icon} {nextTask.name}</span>
+            </span>
+            <span className="font-mono text-[11.5px] text-muted-foreground flex-shrink-0">
               {nextTask.startTime} – {nextTask.endTime}
             </span>
-            <span className="text-xs text-muted-foreground">
-              {translations.startsIn} {formatTimeRemaining(timeUntilNext)}
-            </span>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
