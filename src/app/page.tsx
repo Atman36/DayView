@@ -11,6 +11,7 @@ import { DayStats } from '@/components/day-stats';
 import { CurrentTaskWidget } from '@/components/current-task-widget';
 import type { Task, Category } from '@/types';
 import { parseMarkdown, generateMarkdown } from '@/utils/markdown';
+import { clipToWindow } from '@/utils/time-window';
 import { Button } from '@/components/ui/button';
 import { Settings, Upload, Download, Plus } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -88,38 +89,10 @@ export default function Home() {
   };
 
 
-  const dayTasks = tasks.filter(task => {
-    const startHour = parseInt(task.startTime.split(':')[0]);
-    const endHour = parseInt(task.endTime.split(':')[0]);
-    const endMinute = parseInt(task.endTime.split(':')[1]);
-    // Include tasks that start between 6:00 and 17:59
-    // Also include tasks that cross the 18:00 boundary (start before 18:00, end after 18:00)
-    // Handle midnight crossing for day clock (e.g. 22:00 - 02:00 is not on day clock unless split)
-     if (startHour >= 6 && startHour < 18) return true;
-     // Case: Starts before 6 AM, ends after 6 AM
-     if (startHour < 6 && (endHour > 6 || (endHour === 6 && endMinute > 0))) return true;
-     // Case: Starts before 6 PM, ends after 6 PM
-     if (startHour < 18 && (endHour >= 18 || endHour < startHour)) return true; // endHour < startHour handles midnight crossing ending before 6 AM
-     return false;
-  });
-
-  const nightTasks = tasks.filter(task => {
-    const startHour = parseInt(task.startTime.split(':')[0]);
-    const endHour = parseInt(task.endTime.split(':')[0]);
-    const endMinute = parseInt(task.endTime.split(':')[1]);
-    
-    // Проверка на задачу планирования (17:00-18:00), которая дублируется
-    // Если задача начинается в 17:00 и заканчивается в 18:00, показываем её только на дневной диаграмме
-    if (startHour === 17 && endHour === 18 && endMinute === 0) return false;
-    
-    // Include tasks starting between 18:00 and 05:59
-    if (startHour >= 18 || startHour < 6) return true;
-    // Case: Starts before 6 PM, ends after 6 PM
-    if (startHour < 18 && (endHour >= 18 || endHour < 6)) return true; // endHour < 6 handles midnight crossing
-    // Case: Starts before 6 AM, ends after 6 AM (needs to be shown partially)
-    if (startHour < 6 && (endHour > 6 || (endHour === 6 && endMinute > 0))) return true;
-    return false;
-  });
+  // Membership = non-empty overlap with the dial's own 12h window (360 = day 06:00-18:00,
+  // 1080 = night 18:00-06:00). A task touching a boundary only belongs to one dial.
+  const dayTasks = tasks.filter(task => clipToWindow(task.startTime, task.endTime, 360).length > 0);
+  const nightTasks = tasks.filter(task => clipToWindow(task.startTime, task.endTime, 1080).length > 0);
 
 
   if (!isClient) {

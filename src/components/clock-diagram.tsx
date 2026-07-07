@@ -3,6 +3,7 @@ import type { FC } from 'react';
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import type { Task, Category } from '@/types';
 import { timeToAngle, getSegmentPath, isDarkColor, timeToAngle12 } from '@/utils/color';
+import { clipToWindow } from '@/utils/time-window';
 import { TaskDialog } from './task-dialog';
 import { format } from 'date-fns-tz';
 import { TASK_NAME_SHORTENING } from '@/constants/task-name-shortening';
@@ -127,16 +128,19 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
   }, []);
 
   const segments = useMemo(() => {
-    if (!isClient) return []; 
+    if (!isClient) return [];
 
-    return tasks
-      .map((task) => {
-        const startAngle = calculateAngle(task.startTime);
-        const endAngle = calculateAngle(task.endTime);
-        const color = getTaskColor(task.categoryName);
+    const windowStart = convertTimeToMinutes(startTime); // component's own window prop
+
+    return tasks.flatMap((task) => {
+      const color = getTaskColor(task.categoryName);
+
+      return clipToWindow(task.startTime, task.endTime, windowStart).map((iv, i) => {
+        const startAngle = calculateAngle(minutesToTime(iv.start));
+        const endAngle = calculateAngle(minutesToTime(iv.end));
 
         let deltaAngle = endAngle - startAngle;
-        if (deltaAngle <= 0) { 
+        if (deltaAngle <= 0) {
             deltaAngle += 360;
         }
 
@@ -151,17 +155,18 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
           color,
           textAngle,
           textColor: isDarkColor(color) ? '#FFFFFF' : '#000000',
-          originalTask: task, 
-          deltaAngle: deltaAngle, 
+          originalTask: task,
+          deltaAngle: deltaAngle,
           startAngle: startAngle,
-          endAngle: endAngle, 
-          innerRadius: innerRadius, 
+          endAngle: endAngle,
+          innerRadius: innerRadius,
           isHovered: false, // Add hover state
-          icon: task.icon // Pass icon through
+          icon: task.icon, // Pass icon through
+          segmentKey: `${task.id}:${i}`,
         };
-      })
-      .flat(); 
-  }, [tasks, categories, categoryMap, center, radius, isClient]); 
+      });
+    });
+  }, [tasks, categories, categoryMap, center, radius, isClient, startTime]);
 
   const hourMarkers = useMemo(() => {
     if (!isClient) return [];
@@ -522,7 +527,7 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
         {segments.map((segment) => {
           const isOverlapping = overlappingTaskIds.has(segment.id);
           return (
-            <g key={segment.id} data-segment-id={segment.id} onClick={(e) => segment.originalTask && handleSegmentClick(e, segment.originalTask)} onMouseEnter={() => setHoveredSegment(segment.id)} onMouseLeave={() => setHoveredSegment(null)} className="cursor-pointer group">
+            <g key={segment.segmentKey} data-segment-id={segment.id} onClick={(e) => segment.originalTask && handleSegmentClick(e, segment.originalTask)} onMouseEnter={() => setHoveredSegment(segment.id)} onMouseLeave={() => setHoveredSegment(null)} className="cursor-pointer group">
               <path 
                 d={segment.path} 
                 fill={segment.color} 
