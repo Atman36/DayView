@@ -109,6 +109,7 @@ interface Translation {
   endsIn: string;
   startsIn: string;
   dayStats: string;
+  zeroDurationError: string;
 }
 
 const translations: Record<Language, Translation> = {
@@ -217,6 +218,7 @@ const translations: Record<Language, Translation> = {
     endsIn: 'Ends in',
     startsIn: 'Starts in',
     dayStats: 'Day Statistics',
+    zeroDurationError: 'Start and end times cannot be the same',
   },
   ru: {
     // Main page
@@ -323,6 +325,7 @@ const translations: Record<Language, Translation> = {
     endsIn: 'Закончится через',
     startsIn: 'Начнётся через',
     dayStats: 'Статистика дня',
+    zeroDurationError: 'Время начала и окончания не должно совпадать',
   }
 };
 

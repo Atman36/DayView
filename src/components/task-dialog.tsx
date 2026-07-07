@@ -87,6 +87,11 @@ export const TaskDialog: FC<TaskDialogProps> = ({
       return;
     }
 
+    if (startTime === endTime) {
+      alert(t.zeroDurationError);
+      return;
+    }
+
     if (isAdding) {
         const newTaskData: Omit<Task, 'id'> = { name, startTime, endTime, categoryName, status, icon: icon || undefined };
         onSave(newTaskData);
