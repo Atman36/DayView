@@ -6,7 +6,6 @@ import { timeToAngle, getSegmentPath, isDarkColor, timeToAngle12 } from '@/utils
 import { clipToWindow } from '@/utils/time-window';
 import { TaskDialog } from './task-dialog';
 import { format } from 'date-fns-tz';
-import { TASK_NAME_SHORTENING } from '@/constants/task-name-shortening';
 import { detectOverlaps } from '@/utils/overlap-detection';
 
 // Time constants
@@ -248,86 +247,74 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
     innerRadius: number;
     isHovered: boolean;
   }) => {
-    const textRadius = segment.innerRadius + (radius - segment.innerRadius) * 0.7;
+    const textRadius = segment.innerRadius + (radius - segment.innerRadius) * 0.66;
     const approximateArcLength = segment.deltaAngle * (Math.PI / 180) * textRadius;
-    const fontSize = 9;
-    const averageCharWidth = 5.5;
-    const maxTextWidth = approximateArcLength * 0.9;
+    const nameFont = 9.5;
+    const timeFont = 7.5;
+    const averageCharWidth = 5.6;
+    const maxTextWidth = approximateArcLength * 0.92;
     const charactersPerLine = Math.max(1, Math.floor(maxTextWidth / averageCharWidth));
 
-    if (segment.deltaAngle < 8 || maxTextWidth < fontSize * 2) return null; // минимальный угол слегка увеличен
+    if (segment.deltaAngle < 9 || maxTextWidth < nameFont * 2) return null;
 
-    // Добавляем иконку перед названием если она есть
-    const taskName = segment.icon ? `${segment.icon} ${segment.name}` : segment.name;
-    const shortenedName = TASK_NAME_SHORTENING[taskName.toLowerCase()] || taskName.toLowerCase();
+    // Proper-case task name (with icon), wrapped to at most 2 lines — Nocturne style.
+    const name = segment.icon ? `${segment.icon} ${segment.name}` : segment.name;
+    const words = name.split(' ');
+    const MAX_LINES = 2;
 
-    const words = shortenedName.split(' ');
-
-    const MAX_LINES = 3;
-
-    const displayLines: string[] = [];
+    const nameLines: string[] = [];
     let currentLine = '';
-    let lineCount = 0;
     let truncated = false;
 
     for (const word of words) {
-      if (truncated) break;
-
-      if (lineCount >= MAX_LINES) {
-        truncated = true;
-        break;
-      }
-
-      if (currentLine.length + word.length + (currentLine ? 1 : 0) <= charactersPerLine) {
-        currentLine += (currentLine ? ' ' : '') + word;
+      if (nameLines.length >= MAX_LINES) { truncated = true; break; }
+      if ((currentLine ? currentLine.length + 1 : 0) + word.length <= charactersPerLine) {
+        currentLine = currentLine ? `${currentLine} ${word}` : word;
+      } else if (currentLine) {
+        nameLines.push(currentLine);
+        currentLine = word;
       } else {
-        if (currentLine) {
-          displayLines.push(currentLine);
-          lineCount++;
-          if (lineCount >= MAX_LINES) {
-            truncated = true;
-            break;
-          }
-          currentLine = word;
-        } else {
-          currentLine = word.substring(0, Math.max(1, charactersPerLine - 1));
-          truncated = true;
-        }
+        currentLine = word.substring(0, Math.max(1, charactersPerLine - 1));
+        truncated = true;
       }
     }
-
-    if (currentLine && lineCount < MAX_LINES) {
-      displayLines.push(currentLine);
+    if (currentLine && nameLines.length < MAX_LINES) nameLines.push(currentLine);
+    if ((truncated || (currentLine && nameLines.length >= MAX_LINES)) && nameLines.length) {
+      let last = nameLines[nameLines.length - 1];
+      if (last.length > charactersPerLine) last = last.substring(0, Math.max(1, charactersPerLine - 1));
+      nameLines[nameLines.length - 1] = `${last}…`;
     }
 
-    if (truncated && displayLines.length < MAX_LINES) {
-      displayLines[displayLines.length - 1] += '…';
-    }
+    // Show the time range only when the segment is roomy enough for it.
+    const showTime = maxTextWidth >= 52 && segment.deltaAngle >= 15;
+    const items: { text: string; kind: 'name' | 'time' }[] = [
+      ...nameLines.map((l) => ({ text: l, kind: 'name' as const })),
+      ...(showTime ? [{ text: `${segment.startTime}–${segment.endTime}`, kind: 'time' as const }] : []),
+    ];
 
+    const lineHeight = 10.5;
     const midpointAngle = segment.startAngle + segment.deltaAngle / 2;
+    const cx = center + textRadius * Math.cos((midpointAngle - 90) * (Math.PI / 180));
+    const cy = center + textRadius * Math.sin((midpointAngle - 90) * (Math.PI / 180));
+    const fill = isDarkColor(segment.color) ? '#FFFFFF' : '#1A1A18';
 
-    const lineHeight = fontSize * 1.25;
-
-    return displayLines.map((line, index) => {
-      const lineOffset = (index - (displayLines.length - 1) / 2) * lineHeight;
-
-      const textX = center + textRadius * Math.cos((midpointAngle - 90) * (Math.PI / 180));
-      const textY = center + textRadius * Math.sin((midpointAngle - 90) * (Math.PI / 180)) + lineOffset;
-
+    return items.map((item, index) => {
+      const offset = (index - (items.length - 1) / 2) * lineHeight;
+      const isTime = item.kind === 'time';
       return (
         <text
           key={`segment-text-${segment.id}-${index}`}
-          x={textX}
-          y={textY}
+          x={cx}
+          y={cy + offset}
           textAnchor="middle"
           dominantBaseline="middle"
-          fill={isDarkColor(segment.color) ? "#FFFFFF" : "#1A1A18"}
-          fontSize={fontSize}
-          fontWeight="600"
-          opacity={segment.id === hoveredSegment ? 1 : 0.92}
-          style={{ fontFamily: 'var(--font-sans)' }}
+          fill={fill}
+          fontSize={isTime ? timeFont : nameFont}
+          fontWeight={isTime ? 500 : 600}
+          opacity={isTime ? 0.72 : segment.id === hoveredSegment ? 1 : 0.95}
+          style={{ fontFamily: isTime ? 'var(--font-mono)' : 'var(--font-sans)' }}
         >
-          {line}
+          {item.text}
         </text>
       );
     });
@@ -454,28 +441,12 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
               >
                 <title>{segment.name} — {segment.startTime}–{segment.endTime}{isOverlapping ? ' ⚠️ Конфликт!' : ''}</title>
               </path>
-              {renderSegmentText(segment)}
             </g>
           );
         })}
 
         {/* Hour numbers */}
         {hourNumbers}
-
-        {/* Micro wordmark below center */}
-        <text
-          x={center}
-          y={center + 28}
-          textAnchor="middle"
-          dominantBaseline="central"
-          fontSize="7.5"
-          fill="var(--dial-ink2)"
-          opacity="0.55"
-          letterSpacing="2.4"
-          style={{ fontFamily: 'var(--font-mono)', pointerEvents: 'none' }}
-        >
-          DAYVIEW
-        </text>
 
         {/* Current-time hand with amber counterweight */}
         {handGeom && (
@@ -511,6 +482,15 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
             <circle cx={center} cy={center} r={3} fill="var(--dial-amber)" />
           </g>
         )}
+
+        {/* Segment labels on top so the hand never hides them */}
+        <g style={{ pointerEvents: 'none' }}>
+          {segments.map((segment) => (
+            <React.Fragment key={`label-${segment.segmentKey}`}>
+              {renderSegmentText(segment)}
+            </React.Fragment>
+          ))}
+        </g>
       </svg>
       {isTaskDialogOpen && editingTask && (
         <TaskDialog

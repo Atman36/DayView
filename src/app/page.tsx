@@ -112,7 +112,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-5">
+      <div className="max-w-[1240px] xl:max-w-[1400px] 2xl:max-w-[1640px] mx-auto px-4 md:px-8 py-5">
         {/* Header */}
         <header className="flex items-center gap-x-4 gap-y-3 flex-wrap pb-4 mb-6 border-b border-border">
           <div className="flex items-baseline gap-3">
@@ -190,9 +190,9 @@ export default function Home() {
         </header>
 
         {/* Dials */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 justify-items-center mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 2xl:gap-12 justify-items-center mb-6">
           <div className="flex flex-col items-center gap-2.5 w-full">
-            <div className="w-full max-w-[456px] aspect-square">
+            <div className="w-full max-w-[460px] xl:max-w-[540px] 2xl:max-w-[640px] aspect-square">
               <ClockDiagram
                 startTime="06:00"
                 endTime="18:00"
@@ -210,7 +210,7 @@ export default function Home() {
             </div>
           </div>
           <div className="flex flex-col items-center gap-2.5 w-full">
-            <div className="w-full max-w-[456px] aspect-square">
+            <div className="w-full max-w-[460px] xl:max-w-[540px] 2xl:max-w-[640px] aspect-square">
               <ClockDiagram
                 startTime="18:00"
                 endTime="06:00"
@@ -230,7 +230,7 @@ export default function Home() {
         </div>
 
         {/* Info columns, pressed to the dials */}
-        <div className="grid grid-cols-1 lg:grid-cols-[19rem_1fr_19rem] gap-3 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-[19rem_1fr_19rem] 2xl:grid-cols-[22rem_1fr_22rem] gap-3 items-stretch">
           <CurrentTaskWidget
             tasks={tasks}
             categories={categories}
