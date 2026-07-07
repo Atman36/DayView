@@ -23,7 +23,6 @@ DayView is a Next.js TypeScript application that visualizes daily schedules as d
 - **React 18.3.1** - UI library (client-side rendering)
 - **TypeScript 5** - Type safety (strict mode enabled)
 - **Tailwind CSS 3.4** - Utility-first CSS framework with custom theme
-- **Zustand 5.0** - Lightweight state management (not currently in use, but available)
 
 ### UI Libraries
 - **Radix UI** - Headless UI primitives (dialogs, dropdowns, tooltips, etc.)
@@ -34,9 +33,6 @@ DayView is a Next.js TypeScript application that visualizes daily schedules as d
 
 ### Data & Utilities
 - **date-fns 3.6** & **date-fns-tz 3.2** - Date/time manipulation and timezone support
-- **react-hook-form 7.54** - Form state management
-- **zod 3.24** - Schema validation
-- **uuid** - Unique ID generation
 
 ### AI Integration
 - **Genkit 1.6** - AI framework
@@ -51,13 +47,13 @@ DayView is a Next.js TypeScript application that visualizes daily schedules as d
 2. **Custom Hooks Pattern**: Business logic extracted into reusable hooks
 3. **Component Composition**: UI built from small, focused components
 4. **Type-First Development**: Strict TypeScript with explicit type definitions
-5. **Controlled Components**: Form inputs managed through react-hook-form
+5. **Controlled Components**: Form inputs managed with React state (useState)
 6. **Internationalization**: Translation context with English/Russian support
 
 ### Core Components Structure
 
 #### Clock Diagram System
-- **Location**: `src/components/clock-diagram.tsx`, `src/components/clock-diagram-optimized.tsx`
+- **Location**: `src/components/clock-diagram.tsx`
 - **Purpose**: Render 12-hour circular diagrams with task segments
 - **Technology**: Pure SVG with interactive hover states and tooltips
 - **Key Features**:
@@ -91,7 +87,7 @@ DayView is a Next.js TypeScript application that visualizes daily schedules as d
 
 #### Modal Architecture
 - Uses Radix UI Dialog primitives
-- Form validation with react-hook-form + zod
+- Form state via React useState with inline validation
 - Controlled state with callback props for data updates
 
 ### Data Flow
@@ -252,11 +248,9 @@ interface Category {
 
 #### Components
 - **Main clock logic**: `src/components/clock-diagram.tsx`
-- **Optimized clock**: `src/components/clock-diagram-optimized.tsx`
 - **Task dialog**: `src/components/task-dialog.tsx`
 - **Task checklist**: `src/components/task-checklist.tsx`
 - **Settings dialog**: `src/components/settings-dialog.tsx`
-- **Theme toggle**: `src/components/theme-toggle.tsx`
 - **Translation provider**: `src/components/translation-provider.tsx`
 - **UI primitives**: `src/components/ui/*` (Shadcn components)
 
