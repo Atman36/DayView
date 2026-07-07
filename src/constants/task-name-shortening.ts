@@ -21,5 +21,10 @@ export const TASK_NAME_SHORTENING: Record<string, string> = {
   "завтрак чтение": "завтрак, чтение",
   "завтрак": "завтрак, чтение",
   "планирование на завтра": "планирование",
-  "физическая активность": "физическая активность"
+  "физическая активность": "физическая активность",
+  // English (default EN schedule multi-word task names)
+  "morning routine": "morning",
+  "evening planning": "plan",
+  "work - block 1": "work 1",
+  "work - block 2": "work 2"
 };

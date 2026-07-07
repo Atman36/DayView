@@ -205,7 +205,7 @@ const translations: Record<Language, Translation> = {
     sleepTime: 'Sleep',
     
     // Day stats
-    dayFillness: 'Day Fillness',
+    dayFillness: 'Day Fullness',
     conflicts: 'Conflicts',
     categoryBreakdown: 'By Category',
     hours: 'h',

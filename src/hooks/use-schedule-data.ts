@@ -81,7 +81,7 @@ export function useScheduleData() {
   // Обновление задачи
   const handleTaskUpdate = useCallback((updatedTask: Task) => {
     // Проверяем, является ли это операцией удаления
-    if ('isDeleted' in updatedTask && (updatedTask as any).isDeleted) {
+    if ('isDeleted' in updatedTask && (updatedTask as Task & { isDeleted?: boolean }).isDeleted) {
       handleTaskDelete(updatedTask.id);
       return;
     }

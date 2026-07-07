@@ -132,7 +132,7 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
     return tasks
       .map((task) => {
         const startAngle = calculateAngle(task.startTime);
-        let endAngle = calculateAngle(task.endTime); 
+        const endAngle = calculateAngle(task.endTime);
         const color = getTaskColor(task.categoryName);
 
         let deltaAngle = endAngle - startAngle;
@@ -143,7 +143,7 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
         const innerRadius = radius * 0.01; // Небольшой внутренний радиус
         const path = getSegmentPath(center, center, innerRadius, radius, startAngle, endAngle);
 
-        let textAngle = (startAngle + deltaAngle / 2) % 360;
+        const textAngle = (startAngle + deltaAngle / 2) % 360;
 
         return {
           ...task,
@@ -266,7 +266,7 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
         const angle = calculateAngle(time);
         
         const specialOffset = textOffset + 2;
-        let specialX = center + (radius + specialOffset) * Math.cos(((angle - 90) * Math.PI) / 180);
+        const specialX = center + (radius + specialOffset) * Math.cos(((angle - 90) * Math.PI) / 180);
         let specialY = center + (radius + specialOffset) * Math.sin(((angle - 90) * Math.PI) / 180);
         
         if ((hour24 === 6 && isDayClock) || (hour24 === 18 && !isDayClock)) {
@@ -338,7 +338,18 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
     setAddInitialValues(null);
   };
 
-  const renderSegmentText = useCallback((segment: any) => {
+  const renderSegmentText = useCallback((segment: Task & {
+    path: string;
+    color: string;
+    textAngle: number;
+    textColor: string;
+    originalTask: Task;
+    deltaAngle: number;
+    startAngle: number;
+    endAngle: number;
+    innerRadius: number;
+    isHovered: boolean;
+  }) => {
     const textRadius = segment.innerRadius + (radius - segment.innerRadius) * 0.7;
     const approximateArcLength = segment.deltaAngle * (Math.PI / 180) * textRadius;
     const fontSize = 9; 
@@ -356,7 +367,7 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
     
     const MAX_LINES = 3; 
     
-    let displayLines: string[] = [];
+    const displayLines: string[] = [];
     let currentLine = '';
     let lineCount = 0;
     let truncated = false;
@@ -381,7 +392,7 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
           }
           currentLine = word;
         } else {
-          currentLine = word.substring(0, charactersPerLine);
+          currentLine = word.substring(0, Math.max(1, charactersPerLine - 1));
           truncated = true;
         }
       }
@@ -392,7 +403,7 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
     }
     
     if (truncated && displayLines.length < MAX_LINES) {
-      displayLines[displayLines.length - 1] += '...';
+      displayLines[displayLines.length - 1] += '…';
     }
     
     const midpointAngle = segment.startAngle + segment.deltaAngle / 2;
