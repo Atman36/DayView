@@ -442,19 +442,6 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
     });
   }, [center, radius, hoveredSegment]);
 
-  const currentTimeIndicator = currentTimeAngle !== null ? (
-    <line
-      x1={center}
-      y1={center}
-      x2={center + radius * Math.cos(((currentTimeAngle - 90) * Math.PI) / 180)}
-      y2={center + radius * Math.sin(((currentTimeAngle - 90) * Math.PI) / 180)}
-      stroke="hsl(var(--destructive))"
-      strokeWidth="1.5"
-      strokeDasharray="4 2"
-      className="pointer-events-none"
-    />
-  ) : null;
-
   if (!isClient) {
     return <div className="w-full h-full flex items-center justify-center text-muted-foreground">Загрузка часов...</div>;
   }
@@ -549,16 +536,19 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
         })}
         {hourMarkers}
         {currentTimeAngle !== null && (
-          <line
-            x1={center}
-            y1={center}
-            x2={center + radius * Math.cos(((currentTimeAngle - 90) * Math.PI) / 180)}
-            y2={center + radius * Math.sin(((currentTimeAngle - 90) * Math.PI) / 180)}
-            stroke="hsl(var(--destructive))"
-            strokeWidth="1.5"
-            strokeDasharray="4 2"
-            className="pointer-events-none"
-          />
+          <g className="pointer-events-none">
+            <line
+              x1={center}
+              y1={center}
+              x2={center + radius * 0.95 * Math.cos(((currentTimeAngle - 90) * Math.PI) / 180)}
+              y2={center + radius * 0.95 * Math.sin(((currentTimeAngle - 90) * Math.PI) / 180)}
+              stroke="hsl(var(--destructive))"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+            <circle cx={center} cy={center} r={3} fill="hsl(var(--destructive))" />
+            <circle cx={center} cy={center} r={1} fill="hsl(var(--background))" />
+          </g>
         )}
       </svg>
       {isTaskDialogOpen && editingTask && (
