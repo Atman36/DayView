@@ -248,12 +248,12 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
     innerRadius: number;
     isHovered: boolean;
   }) => {
-    const textRadius = segment.innerRadius + (radius - segment.innerRadius) * 0.66;
+    const textRadius = segment.innerRadius + (radius - segment.innerRadius) * 0.48;
     const approximateArcLength = segment.deltaAngle * (Math.PI / 180) * textRadius;
     const nameFont = 9.5;
     const timeFont = 7.5;
     const averageCharWidth = 5.6;
-    const maxTextWidth = approximateArcLength * 0.92;
+    const maxTextWidth = approximateArcLength * 0.84;
     const charactersPerLine = Math.max(1, Math.floor(maxTextWidth / averageCharWidth));
 
     if (segment.deltaAngle < 9 || maxTextWidth < nameFont * 2) return null;
