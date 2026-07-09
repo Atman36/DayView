@@ -2,7 +2,7 @@
 import type { FC } from 'react';
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import type { Task, Category } from '@/types';
-import { timeToAngle, getSegmentPath, isDarkColor, timeToAngle12 } from '@/utils/color';
+import { getSegmentPath, isDarkColor, timeToAngle12 } from '@/utils/color';
 import { clipToWindow } from '@/utils/time-window';
 import { TaskDialog } from './task-dialog';
 import { format } from 'date-fns-tz';
@@ -20,6 +20,7 @@ const FACE_R = 170;   // dial face + backdrop for the dotted ring
 const DOT_R = 163;    // dotted minute ring radius
 const NUM_R = 145;    // hour numbers (mono), sit inside the dot ring
 const SEG_R = 132;    // task segment outer radius (inside the numbers)
+const SEG_INNER_R = 58; // leaves the central negative space from the 1b reference
 const HAND_LEN = 120; // current-time hand length
 const TAIL_LEN = 26;  // amber counterweight length
 
@@ -157,7 +158,7 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
             deltaAngle += 360;
         }
 
-        const innerRadius = radius * 0.01; // Небольшой внутренний радиус
+        const innerRadius = SEG_INNER_R;
         const path = getSegmentPath(center, center, innerRadius, radius, startAngle, endAngle);
 
         const textAngle = (startAngle + deltaAngle / 2) % 360;
@@ -464,6 +465,7 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
         >
           DAYVIEW
         </text>
+        <circle cx={center} cy={center} r={4} fill="var(--dial-hair)" />
 
         {/* Current-time hand with amber counterweight */}
         {handGeom && (
