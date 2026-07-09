@@ -448,6 +448,23 @@ export const ClockDiagram: FC<ClockDiagramProps> = ({
         {/* Hour numbers */}
         {hourNumbers}
 
+        {/* Subtle 1b dial signature from the Nocturne reference. */}
+        <text
+          x={center}
+          y={center + 30}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill="var(--dial-ink2)"
+          fontSize="7.5"
+          fontWeight="600"
+          letterSpacing="0.32em"
+          opacity="0.36"
+          pointerEvents="none"
+          style={{ fontFamily: 'var(--font-mono)' }}
+        >
+          DAYVIEW
+        </text>
+
         {/* Current-time hand with amber counterweight */}
         {handGeom && (
           <g className="pointer-events-none">

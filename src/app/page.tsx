@@ -94,9 +94,11 @@ export default function Home() {
     const root = document.documentElement;
     if (newTheme === 'dark') {
       root.classList.add('dark');
+      root.dataset.theme = 'dark';
       localStorage.setItem('theme', 'dark');
     } else {
       root.classList.remove('dark');
+      root.dataset.theme = 'light';
       localStorage.setItem('theme', 'light');
     }
   };
